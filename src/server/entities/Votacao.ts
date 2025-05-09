@@ -9,8 +9,8 @@ import {
   OneToMany,
   JoinColumn,
 } from "typeorm";
+import type { Voto } from "./Voto"; // Import as type only
 import { Emenda } from "./Emenda";
-import { Voto } from "./Voto";
 
 @Entity("votacoes")
 export class Votacao {
@@ -52,6 +52,6 @@ export class Votacao {
   @JoinColumn({ name: "emenda_id" })
   emenda: Emenda;
 
-  @OneToMany(() => Voto, (voto) => voto.votacao)
+  @OneToMany("Voto", "votacao") // Use string references instead of imported classes
   votos: Voto[];
 }

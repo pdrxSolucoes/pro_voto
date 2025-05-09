@@ -8,7 +8,7 @@ import {
   CreateDateColumn,
   Unique,
 } from "typeorm";
-import { Votacao } from "./Votacao";
+import type { Votacao } from "./Votacao"; // Import as type only
 import { Usuario } from "./Usuario";
 
 @Entity("votos")
@@ -32,7 +32,7 @@ export class Voto {
   @CreateDateColumn({ name: "data_voto" })
   dataVoto: Date;
 
-  @ManyToOne(() => Votacao, (votacao) => votacao.votos)
+  @ManyToOne("Votacao", "votos")
   @JoinColumn({ name: "votacao_id" })
   votacao: Votacao;
 

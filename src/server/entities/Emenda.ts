@@ -7,7 +7,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import { Votacao } from "./Votacao";
+import type { Votacao } from "./Votacao";
 
 @Entity("emendas")
 export class Emenda {
@@ -17,25 +17,26 @@ export class Emenda {
   @Column()
   titulo: string;
 
-  @Column({ type: "text" })
+  @Column()
   descricao: string;
 
-  @Column({ type: "timestamp" })
-  dataApresentacao: Date;
+  @Column()
+  data_apresentacao: Date;
 
   @Column({
     type: "enum",
     enum: ["pendente", "em_votacao", "aprovada", "reprovada"],
     default: "pendente",
   })
-  status: string;
+  status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
 
-  @CreateDateColumn({ name: "data_criacao" })
-  dataCriacao: Date;
+  @Column({ default: () => "CURRENT_TIMESTAMP" })
+  data_criacao: Date;
 
-  @UpdateDateColumn({ name: "data_atualizacao" })
-  dataAtualizacao: Date;
+  @Column({ default: () => "CURRENT_TIMESTAMP" })
+  data_atualizacao: Date;
 
-  @OneToMany(() => Votacao, (votacao) => votacao.emenda)
+  // Use string literal for entity name instead of class reference
+  @OneToMany("Votacao", "emenda")
   votacoes: Votacao[];
 }

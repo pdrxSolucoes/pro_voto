@@ -1,11 +1,5 @@
-// src/server/entities/Usuario.ts
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
+import type { Voto } from "./Voto";
 
 @Entity("usuarios")
 export class Usuario {
@@ -25,14 +19,18 @@ export class Usuario {
     type: "enum",
     enum: ["vereador", "admin"],
   })
-  cargo: string;
+  cargo: "vereador" | "admin";
 
   @Column({ default: true })
   ativo: boolean;
 
-  @CreateDateColumn({ name: "data_criacao" })
-  dataCriacao: Date;
+  @Column({ default: () => "CURRENT_TIMESTAMP" })
+  data_criacao: Date;
 
-  @UpdateDateColumn({ name: "data_atualizacao" })
-  dataAtualizacao: Date;
+  @Column({ default: () => "CURRENT_TIMESTAMP" })
+  data_atualizacao: Date;
+
+  // Use string literal for entity name
+  @OneToMany("Voto", "vereador")
+  votos: Voto[];
 }

@@ -1,3 +1,4 @@
+// src/app/api/emendas/route.ts
 import { NextResponse } from "next/server";
 import { getRepository } from "@/lib/db";
 import { Emenda } from "@/server/entities/Emenda";
@@ -21,12 +22,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
-    // Build query
-    const queryOptions: any = {
+    // Build query options
+    let queryOptions: any = {
       order: { dataCriacao: "DESC" },
       relations: ["votacoes"],
     };
 
+    // Add status filter if provided
     if (status) {
       queryOptions.where = { status };
     }
@@ -35,10 +37,16 @@ export async function GET(request: Request) {
     const emendas = await emendaRepository.find(queryOptions);
 
     return NextResponse.json(emendas);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching emendas:", error);
+
+    // Send more detailed error for debugging
     return NextResponse.json(
-      { error: "Erro ao buscar emendas" },
+      {
+        error: "Erro ao buscar emendas",
+        details: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }
@@ -99,12 +107,16 @@ export async function POST(request: Request) {
     });
 
     // Save to database
-    await emendaRepository.save(emenda);
-    return NextResponse.json(emenda, { status: 201 });
-  } catch (error) {
+    const savedEmenda = await emendaRepository.save(emenda);
+    return NextResponse.json(savedEmenda, { status: 201 });
+  } catch (error: any) {
     console.error("Error creating emenda:", error);
     return NextResponse.json(
-      { error: "Erro ao criar emenda" },
+      {
+        error: "Erro ao criar emenda",
+        details: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }
