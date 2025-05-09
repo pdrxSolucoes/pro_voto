@@ -80,13 +80,20 @@ function VotacaoRealTimeContent() {
   // Simular dados para demonstração se não houver resultado
   const resultadoDemo = resultado || {
     id: 1,
-    emendaId: 2,
-    emendaTitulo: "Programa de Coleta Seletiva",
+    emenda: {
+      id: 2,
+      titulo: "Programa de Coleta Seletiva",
+      descricao: "Programa de Coleta Seletiva das mulheres",
+      status: "em_andamento",
+    },
     votosFavor: 5,
     votosContra: 3,
     abstencoes: 1,
     resultado: "em_andamento" as const,
-    dataInicio: "2025-04-25T14:30:00",
+    data_inicio: "2025-04-25T14:30:00",
+    data_fim: null, // Adicionando data_fim (pode ser null se não estiver disponível)
+    total_vereadores: 10, // Total de vereadores
+    total_votos: 9, // Total de votos (favor + contra + abstenção)
     vereadores: [
       { id: 1, nome: "João Silva", voto: "aprovar" as const },
       { id: 2, nome: "Maria Oliveira", voto: "aprovar" as const },
