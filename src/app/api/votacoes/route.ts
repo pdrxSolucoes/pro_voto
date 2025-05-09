@@ -1,51 +1,10 @@
+// src/app/api/votacoes/route.ts
 import { NextResponse } from "next/server";
 import { getRepository } from "@/lib/db";
-import { Votacao } from "@/server/entities/Votacao";
 import { Emenda } from "@/server/entities/Emenda";
-import { verifyAuthToken, isAdmin } from "@/lib/auth";
+import { Votacao } from "@/server/entities/Votacao";
+import { verifyAuthToken } from "@/lib/auth";
 
-// GET all votacoes
-export async function GET(request: Request) {
-  try {
-    const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    // Verify auth token
-    const authResult = await verifyAuthToken(token);
-    if (!authResult.success) {
-      return NextResponse.json({ error: authResult.message }, { status: 401 });
-    }
-
-    // Get votacoes repository
-    const votacaoRepository = await getRepository(Votacao);
-
-    // Get query parameters
-    const { searchParams } = new URL(request.url);
-    const resultado = searchParams.get("resultado");
-
-    // Build query
-    const queryOptions: any = {
-      order: { dataInicio: "DESC" },
-      relations: ["emenda", "votos", "votos.vereador"],
-    };
-
-    if (resultado) {
-      queryOptions.where = { resultado };
-    }
-
-    // Get all votacoes
-    const votacoes = await votacaoRepository.find(queryOptions);
-
-    return NextResponse.json(votacoes);
-  } catch (error) {
-    console.error("Error fetching votacoes:", error);
-    return NextResponse.json(
-      { error: "Erro ao buscar votações" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST new votacao (start a new voting session)
 export async function POST(request: Request) {
   try {
     const token = request.headers.get("Authorization")?.split(" ")[1];
@@ -57,18 +16,24 @@ export async function POST(request: Request) {
     }
 
     // Check admin permission
-    if (!isAdmin(authResult.user)) {
+    if (authResult.user?.cargo !== "admin") {
       return NextResponse.json(
-        {
-          error:
-            "Permissão negada. Apenas administradores podem iniciar votações.",
-        },
+        { error: "Apenas administradores podem iniciar votações" },
         { status: 403 }
       );
     }
 
     // Parse request body
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Formato de requisição inválido" },
+        { status: 400 }
+      );
+    }
+
     const { emendaId } = body;
 
     // Validate input
@@ -81,7 +46,7 @@ export async function POST(request: Request) {
 
     // Check if emenda exists
     const emendaRepository = await getRepository(Emenda);
-    const emenda = await emendaRepository.findOne({ where: { id: emendaId } });
+    const emenda = await emendaRepository.findOneBy({ id: emendaId });
 
     if (!emenda) {
       return NextResponse.json(
@@ -90,18 +55,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if emenda is already in voting
-    if (emenda.status === "em_votacao") {
+    // Check if emenda is available for voting
+    if (emenda.status !== "pendente") {
       return NextResponse.json(
-        { error: "Esta emenda já está em votação" },
-        { status: 400 }
-      );
-    }
-
-    // Check if emenda is already approved or rejected
-    if (emenda.status === "aprovada" || emenda.status === "reprovada") {
-      return NextResponse.json(
-        { error: "Esta emenda já foi votada" },
+        { error: "Apenas emendas pendentes podem iniciar votação" },
         { status: 400 }
       );
     }
@@ -117,16 +74,16 @@ export async function POST(request: Request) {
       abstencoes: 0,
     });
 
-    // Save to database
-    await votacaoRepository.save(votacao);
-
     // Update emenda status
     emenda.status = "em_votacao";
     await emendaRepository.save(emenda);
 
+    // Save votacao
+    await votacaoRepository.save(votacao);
+
     return NextResponse.json(votacao, { status: 201 });
   } catch (error) {
-    console.error("Error creating votacao:", error);
+    console.error("Error starting voting:", error);
     return NextResponse.json(
       { error: "Erro ao iniciar votação" },
       { status: 500 }

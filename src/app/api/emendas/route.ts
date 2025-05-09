@@ -66,8 +66,19 @@ export async function POST(request: Request) {
       );
     }
 
-    // Parse request body
-    const body = await request.json();
+    // Parse request body with error handling
+    let body;
+    try {
+      const rawText = await request.text();
+      body = JSON.parse(rawText);
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      return NextResponse.json(
+        { error: "Formato de requisição inválido. Verifique o JSON enviado." },
+        { status: 400 }
+      );
+    }
+
     const { titulo, descricao } = body;
 
     // Validate input
@@ -89,7 +100,6 @@ export async function POST(request: Request) {
 
     // Save to database
     await emendaRepository.save(emenda);
-
     return NextResponse.json(emenda, { status: 201 });
   } catch (error) {
     console.error("Error creating emenda:", error);

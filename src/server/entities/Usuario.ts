@@ -1,13 +1,11 @@
+// src/server/entities/Usuario.ts
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
+  PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany,
 } from "typeorm";
-
-export type CargoUsuario = "vereador" | "admin";
 
 @Entity("usuarios")
 export class Usuario {
@@ -26,9 +24,8 @@ export class Usuario {
   @Column({
     type: "enum",
     enum: ["vereador", "admin"],
-    default: "vereador",
   })
-  cargo: CargoUsuario;
+  cargo: string;
 
   @Column({ default: true })
   ativo: boolean;
@@ -38,8 +35,4 @@ export class Usuario {
 
   @UpdateDateColumn({ name: "data_atualizacao" })
   dataAtualizacao: Date;
-
-  // We'll define the relations without importing the entities directly
-  @OneToMany("Voto", "vereador")
-  votos: any[];
 }

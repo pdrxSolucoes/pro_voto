@@ -1,55 +1,11 @@
+// src/app/api/votos/route.ts
 import { NextResponse } from "next/server";
 import { getRepository } from "@/lib/db";
 import { Votacao } from "@/server/entities/Votacao";
 import { Voto } from "@/server/entities/Voto";
-import { verifyAuthToken, isVereador } from "@/lib/auth";
+import { verifyAuthToken } from "@/lib/auth";
 
-interface Params {
-  params: {
-    id: string;
-  };
-}
-
-// GET votes for a specific votacao
-export async function GET(request: Request, { params }: Params) {
-  try {
-    const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    // Verify auth token
-    const authResult = await verifyAuthToken(token);
-    if (!authResult.success) {
-      return NextResponse.json({ error: authResult.message }, { status: 401 });
-    }
-
-    const votacaoId = parseInt(params.id);
-
-    // Validate id
-    if (isNaN(votacaoId)) {
-      return NextResponse.json({ error: "ID inválido" }, { status: 400 });
-    }
-
-    // Get voto repository
-    const votoRepository = await getRepository(Voto);
-
-    // Get all votos for this votacao
-    const votos = await votoRepository.find({
-      where: { votacaoId },
-      relations: ["vereador"],
-      order: { dataVoto: "DESC" },
-    });
-
-    return NextResponse.json(votos);
-  } catch (error) {
-    console.error("Error fetching votos:", error);
-    return NextResponse.json(
-      { error: "Erro ao buscar votos" },
-      { status: 500 }
-    );
-  }
-}
-
-// POST new voto (register a vote)
-export async function POST(request: Request, { params }: Params) {
+export async function POST(request: Request) {
   try {
     const token = request.headers.get("Authorization")?.split(" ")[1];
 
@@ -60,44 +16,45 @@ export async function POST(request: Request, { params }: Params) {
     }
 
     // Check vereador permission
-    if (!isVereador(authResult.user)) {
+    if (authResult.user?.cargo !== "vereador") {
       return NextResponse.json(
-        { error: "Permissão negada. Apenas vereadores podem votar." },
+        { error: "Apenas vereadores podem votar" },
         { status: 403 }
       );
     }
 
-    const votacaoId = parseInt(params.id);
-
-    // Validate id
-    if (isNaN(votacaoId)) {
+    // Parse request body
+    let body;
+    try {
+      body = await request.json();
+    } catch (error) {
       return NextResponse.json(
-        { error: "ID da votação inválido" },
+        { error: "Formato de requisição inválido" },
         { status: 400 }
       );
     }
 
-    // Parse request body
-    const body = await request.json();
-    const { voto } = body;
+    const { votacaoId, voto } = body;
 
     // Validate input
-    if (!voto || !["aprovar", "desaprovar", "abster"].includes(voto)) {
+    if (!votacaoId || !voto) {
       return NextResponse.json(
-        {
-          error: 'Voto inválido. Deve ser "aprovar", "desaprovar" ou "abster"',
-        },
+        { error: "ID da votação e voto são obrigatórios" },
         { status: 400 }
       );
     }
 
-    // Get votacao repository
-    const votacaoRepository = await getRepository(Votacao);
+    // Validate vote value
+    if (!["aprovar", "desaprovar", "abster"].includes(voto)) {
+      return NextResponse.json(
+        { error: "Voto deve ser 'aprovar', 'desaprovar' ou 'abster'" },
+        { status: 400 }
+      );
+    }
 
-    // Check if votacao exists and is in progress
-    const votacao = await votacaoRepository.findOne({
-      where: { id: votacaoId },
-    });
+    // Check if votacao exists and is open
+    const votacaoRepository = await getRepository(Votacao);
+    const votacao = await votacaoRepository.findOneBy({ id: votacaoId });
 
     if (!votacao) {
       return NextResponse.json(
@@ -113,15 +70,11 @@ export async function POST(request: Request, { params }: Params) {
       );
     }
 
-    // Get voto repository
-    const votoRepository = await getRepository(Voto);
-
     // Check if vereador already voted
-    const existingVoto = await votoRepository.findOne({
-      where: {
-        votacaoId,
-        vereadorId: authResult.user!.id,
-      },
+    const votoRepository = await getRepository(Voto);
+    const existingVoto = await votoRepository.findOneBy({
+      votacaoId,
+      vereadorId: authResult.user.id,
     });
 
     if (existingVoto) {
@@ -134,13 +87,9 @@ export async function POST(request: Request, { params }: Params) {
     // Create new voto
     const novoVoto = votoRepository.create({
       votacaoId,
-      vereadorId: authResult.user!.id,
-      voto: voto as any,
-      dataVoto: new Date(),
+      vereadorId: authResult.user.id,
+      voto,
     });
-
-    // Save voto
-    await votoRepository.save(novoVoto);
 
     // Update votacao counters
     if (voto === "aprovar") {
@@ -151,11 +100,13 @@ export async function POST(request: Request, { params }: Params) {
       votacao.abstencoes += 1;
     }
 
+    // Save voto and update votacao
+    await votoRepository.save(novoVoto);
     await votacaoRepository.save(votacao);
 
     return NextResponse.json(novoVoto, { status: 201 });
   } catch (error) {
-    console.error("Error creating voto:", error);
+    console.error("Error registering vote:", error);
     return NextResponse.json(
       { error: "Erro ao registrar voto" },
       { status: 500 }

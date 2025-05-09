@@ -1,101 +1,72 @@
-import jwt from "jsonwebtoken";
+// src/lib/auth.ts
 import { getRepository } from "./db";
 import { Usuario } from "@/server/entities/Usuario";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
-interface AuthResult {
-  success: boolean;
-  message?: string;
-  user?: {
-    id: number;
-    email: string;
-    cargo: string;
-  };
-}
+const JWT_SECRET =
+  process.env.JWT_SECRET || "sua_chave_secreta_para_desenvolvimento";
 
-// Verify JWT token and return user info
-export async function verifyAuthToken(token?: string): Promise<AuthResult> {
+// Verify authentication token
+export async function verifyAuthToken(token?: string) {
   if (!token) {
-    return {
-      success: false,
-      message: "Token de autenticação não fornecido",
-    };
+    return { success: false, message: "Token não fornecido" };
   }
 
   try {
-    // Verify token
-    const secret = process.env.JWT_SECRET || "sua_chave_secreta_para_jwt_token";
-    const decoded = jwt.verify(token, secret) as jwt.JwtPayload;
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const userRepository = await getRepository(Usuario);
+    const user = await userRepository.findOneBy({ id: decoded.userId });
 
-    // Extract user id
-    const userId = decoded.id;
-
-    if (!userId) {
-      return {
-        success: false,
-        message: "Token inválido",
-      };
+    if (!user) {
+      return { success: false, message: "Usuário não encontrado" };
     }
 
-    // Get user repository
-    const usuarioRepository = await getRepository(Usuario);
-
-    // Get user from database
-    const usuario = await usuarioRepository.findOne({
-      where: { id: userId, ativo: true },
-    });
-
-    if (!usuario) {
-      return {
-        success: false,
-        message: "Usuário não encontrado ou inativo",
-      };
+    if (!user.ativo) {
+      return { success: false, message: "Usuário inativo" };
     }
 
-    // Return success with user info
-    return {
-      success: true,
-      user: {
-        id: usuario.id,
-        email: usuario.email,
-        cargo: usuario.cargo,
-      },
-    };
+    return { success: true, user };
   } catch (error) {
-    console.error("Error verifying token:", error);
-    return {
-      success: false,
-      message: "Token inválido ou expirado",
-    };
+    return { success: false, message: "Token inválido ou expirado" };
   }
 }
 
-// Middleware for API routes
-export function withAuth(handler: Function) {
-  return async (req: Request, context: any) => {
-    const token = req.headers.get("Authorization")?.split(" ")[1];
+// Generate authentication token
+export async function generateAuthToken(email: string, password: string) {
+  try {
+    const userRepository = await getRepository(Usuario);
+    const user = await userRepository.findOneBy({ email });
 
-    const authResult = await verifyAuthToken(token);
-
-    if (!authResult.success) {
-      return new Response(JSON.stringify({ error: authResult.message }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+    if (!user) {
+      return { success: false, message: "Usuário não encontrado" };
     }
 
-    // Add user to request for later use
-    (req as any).user = authResult.user;
+    if (!user.ativo) {
+      return { success: false, message: "Usuário inativo" };
+    }
 
-    return handler(req, context);
-  };
-}
+    const passwordMatch = await bcrypt.compare(password, user.senha);
+    if (!passwordMatch) {
+      return { success: false, message: "Senha incorreta" };
+    }
 
-// Check if user has admin role
-export function isAdmin(user: any): boolean {
-  return user?.cargo === "admin";
-}
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+      expiresIn: "8h",
+    });
 
-// Check if user is a vereador
-export function isVereador(user: any): boolean {
-  return user?.cargo === "vereador";
+    return {
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        cargo: user.cargo,
+      },
+    };
+  } catch (error) {
+    console.error("Erro ao gerar token:", error);
+    return { success: false, message: "Erro ao gerar token de autenticação" };
+  }
 }

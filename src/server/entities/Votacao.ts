@@ -1,15 +1,16 @@
+// src/server/entities/Votacao.ts
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
+  PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
   JoinColumn,
 } from "typeorm";
-
-export type ResultadoVotacao = "aprovada" | "reprovada" | "em_andamento";
+import { Emenda } from "./Emenda";
+import { Voto } from "./Voto";
 
 @Entity("votacoes")
 export class Votacao {
@@ -19,10 +20,10 @@ export class Votacao {
   @Column({ name: "emenda_id" })
   emendaId: number;
 
-  @Column({ name: "data_inicio" })
+  @Column({ type: "timestamp" })
   dataInicio: Date;
 
-  @Column({ name: "data_fim", nullable: true })
+  @Column({ type: "timestamp", nullable: true })
   dataFim: Date;
 
   @Column({
@@ -30,12 +31,12 @@ export class Votacao {
     enum: ["aprovada", "reprovada", "em_andamento"],
     default: "em_andamento",
   })
-  resultado: ResultadoVotacao;
+  resultado: string;
 
-  @Column({ name: "votos_favor", default: 0 })
+  @Column({ default: 0 })
   votosFavor: number;
 
-  @Column({ name: "votos_contra", default: 0 })
+  @Column({ default: 0 })
   votosContra: number;
 
   @Column({ default: 0 })
@@ -47,11 +48,10 @@ export class Votacao {
   @UpdateDateColumn({ name: "data_atualizacao" })
   dataAtualizacao: Date;
 
-  // We'll define the relations without importing the entities directly
-  @ManyToOne("Emenda", "votacoes")
+  @ManyToOne(() => Emenda, (emenda) => emenda.votacoes)
   @JoinColumn({ name: "emenda_id" })
-  emenda: any;
+  emenda: Emenda;
 
-  @OneToMany("Voto", "votacao")
-  votos: any[];
+  @OneToMany(() => Voto, (voto) => voto.votacao)
+  votos: Voto[];
 }

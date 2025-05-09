@@ -1,13 +1,13 @@
+// src/server/entities/Emenda.ts
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
+  PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-
-export type StatusEmenda = "pendente" | "em_votacao" | "aprovada" | "reprovada";
+import { Votacao } from "./Votacao";
 
 @Entity("emendas")
 export class Emenda {
@@ -17,10 +17,10 @@ export class Emenda {
   @Column()
   titulo: string;
 
-  @Column()
+  @Column({ type: "text" })
   descricao: string;
 
-  @Column({ name: "data_apresentacao" })
+  @Column({ type: "timestamp" })
   dataApresentacao: Date;
 
   @Column({
@@ -28,7 +28,7 @@ export class Emenda {
     enum: ["pendente", "em_votacao", "aprovada", "reprovada"],
     default: "pendente",
   })
-  status: StatusEmenda;
+  status: string;
 
   @CreateDateColumn({ name: "data_criacao" })
   dataCriacao: Date;
@@ -36,7 +36,6 @@ export class Emenda {
   @UpdateDateColumn({ name: "data_atualizacao" })
   dataAtualizacao: Date;
 
-  // We'll define the relations without importing the entities directly
-  @OneToMany("Votacao", "emenda")
-  votacoes: any[];
+  @OneToMany(() => Votacao, (votacao) => votacao.emenda)
+  votacoes: Votacao[];
 }

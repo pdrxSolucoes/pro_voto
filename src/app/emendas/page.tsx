@@ -1,4 +1,4 @@
-// src/app/emendas/page.tsx (corrigido)
+// src/app/emendas/page.tsx - updated with auth context
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +11,7 @@ import {
   NotificationsProvider,
 } from "@/components/ui/Notification";
 import { EmendaFormModal } from "@/components/ui/Modal/ModalEmenda";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Emenda {
   id: number;
@@ -26,8 +27,16 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  // Adicionar timeout para detectar problemas de conexão mais rapidamente
   timeout: 10000,
+});
+
+// Set up Axios interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("authToken");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 function EmendasContent() {
@@ -39,14 +48,8 @@ function EmendasContent() {
     undefined
   );
 
-  // Usuário simulado (na implementação real, viria da autenticação)
-  const usuario = {
-    id: 1,
-    nome: "Admin Teste",
-    cargo: "admin",
-  };
-
-  const isAdmin = usuario.cargo === "admin";
+  // Use the auth context
+  const { isAdmin } = useAuth();
   const { addNotification } = useNotifications();
 
   // Carregar as emendas ao iniciar
@@ -148,10 +151,20 @@ function EmendasContent() {
       if (isEditMode) {
         // Atualizar emenda existente usando Axios
         await api.put(`/emendas/${emendaEmEdicao!.id}`, emendaData);
+        addNotification("Emenda atualizada com sucesso!", "success");
       } else {
         // Criar nova emenda usando Axios
-        await api.post("/emendas", emendaData);
+        console.log("Enviando dados para criar emenda:", emendaData);
+        const response = await api.post("/emendas", {
+          titulo: emendaData.titulo,
+          descricao: emendaData.descricao,
+        });
+        console.log("Resposta da API:", response.data);
+        addNotification("Emenda criada com sucesso!", "success");
       }
+
+      // Fechar o modal depois de salvar
+      setIsModalOpen(false);
 
       // Recarregar emendas para atualizar a lista
       await carregarEmendas();
@@ -167,6 +180,7 @@ function EmendasContent() {
         if (err.code === "ECONNABORTED" || !err.response) {
           const errorMessage =
             "Erro de conexão com o servidor. Verifique se o servidor da API está em execução.";
+          addNotification(errorMessage, "error");
           throw new Error(errorMessage);
         } else {
           const errorMessage =
@@ -174,11 +188,16 @@ function EmendasContent() {
             `Erro ao ${isEditMode ? "atualizar" : "criar"} emenda: ${
               err.message
             }`;
+          addNotification(errorMessage, "error");
           throw new Error(errorMessage);
         }
+      } else {
+        addNotification(
+          `Erro ao ${isEditMode ? "atualizar" : "criar"} emenda`,
+          "error"
+        );
+        throw err; // Propagar o erro para ser tratado no componente do modal
       }
-
-      throw err; // Propagar o erro para ser tratado no componente do modal
     }
   };
 

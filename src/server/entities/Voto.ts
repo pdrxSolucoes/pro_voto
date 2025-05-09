@@ -1,17 +1,18 @@
+// src/server/entities/Voto.ts
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
+  PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  CreateDateColumn,
   Unique,
 } from "typeorm";
-
-export type TipoVoto = "aprovar" | "desaprovar" | "abster";
+import { Votacao } from "./Votacao";
+import { Usuario } from "./Usuario";
 
 @Entity("votos")
-@Unique(["votacaoId", "vereadorId"]) // Ensure a vereador can only vote once in a voting session
+@Unique(["votacaoId", "vereadorId"])
 export class Voto {
   @PrimaryGeneratedColumn()
   id: number;
@@ -26,17 +27,16 @@ export class Voto {
     type: "enum",
     enum: ["aprovar", "desaprovar", "abster"],
   })
-  voto: TipoVoto;
+  voto: string;
 
   @CreateDateColumn({ name: "data_voto" })
   dataVoto: Date;
 
-  // We'll define the relations without importing the entities directly
-  @ManyToOne("Votacao", "votos")
+  @ManyToOne(() => Votacao, (votacao) => votacao.votos)
   @JoinColumn({ name: "votacao_id" })
-  votacao: any;
+  votacao: Votacao;
 
-  @ManyToOne("Usuario", "votos")
+  @ManyToOne(() => Usuario)
   @JoinColumn({ name: "vereador_id" })
-  vereador: any;
+  vereador: Usuario;
 }

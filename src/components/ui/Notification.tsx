@@ -152,7 +152,7 @@ function getBackgroundColorByType(type: NotificationType): string {
     case "error":
       return "bg-red-50 border-l-4 border-red-400";
     default:
-      return "bg-gray-50 border-l-4 border-gray-400";
+      return "bg-gray-50 border-l-4 border-black";
   }
 }
 

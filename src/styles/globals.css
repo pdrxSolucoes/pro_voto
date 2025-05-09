@@ -2,27 +2,255 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 215 65% 33%; /* Confresa Azul */
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 0 67% 46%; /* Confresa Vermelho */
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    /* Cores específicas para votação */
+    --aprovacao: 142 76% 36%; /* Verde para aprovação */
+    --reprovacao: 0 84% 60%; /* Vermelho para reprovação */
+    --abstencao: 39 100% 50%; /* Amarelo para abstenção */
+
+    /* Cores da bandeira de Confresa */
+    --confresa-azul: 215 65% 33%;
+    --confresa-azul-claro: 215 65% 43%;
+    --confresa-vermelho: 0 67% 46%;
+    --confresa-vermelho-claro: 0 67% 56%;
+    --confresa-branco: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 215 65% 33%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 0 67% 46%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* Cores específicas para votação no modo escuro */
+    --aprovacao: 142 76% 36%;
+    --reprovacao: 0 84% 60%;
+    --abstencao: 39 100% 50%;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Estilos personalizados para o sistema de votação */
+.btn-aprovar {
+  @apply bg-green-600 text-white hover:bg-green-700 transition-colors;
+}
+
+.btn-reprovar {
+  @apply bg-red-600 text-white hover:bg-red-700 transition-colors;
+}
+
+.btn-abster {
+  @apply bg-yellow-400 text-black hover:bg-yellow-500 transition-colors;
+}
+
+.header-confresa {
+  @apply bg-primary text-white py-4 px-6 flex justify-between items-center;
+}
+
+.footer-confresa {
+  @apply bg-primary text-white py-3 px-6 text-center text-sm;
+}
+
+.card-emenda {
+  @apply border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow;
+}
+
+.card-votacao {
+  @apply border-l-4 border-l-primary rounded-lg p-4 shadow-sm;
+}
+
+.card-resultado {
+  @apply border-l-4 border-l-secondary rounded-lg p-4 shadow-sm;
+}
+
+/* Status badges */
+.badge-status-pendente {
+  @apply bg-gray-500 text-white text-xs px-2 py-1 rounded-full;
+}
+
+.badge-status-em-votacao {
+  @apply bg-blue-500 text-white text-xs px-2 py-1 rounded-full;
+}
+
+.badge-status-aprovada {
+  @apply bg-green-600 text-white text-xs px-2 py-1 rounded-full;
+}
+
+.badge-status-reprovada {
+  @apply bg-red-600 text-white text-xs px-2 py-1 rounded-full;
+}
+
+/* Notificações */
+.notification {
+  @apply fixed top-4 right-4 p-3 rounded-md shadow-lg max-w-md transition-opacity duration-300;
+}
+
+.notification-info {
+  @apply bg-blue-100 border-l-4 border-l-blue-500 text-blue-900;
+}
+
+.notification-success {
+  @apply bg-green-100 border-l-4 border-l-green-500 text-green-900;
+}
+
+.notification-warning {
+  @apply bg-yellow-100 border-l-4 border-l-yellow-500 text-yellow-900;
+}
+
+.notification-error {
+  @apply bg-red-100 border-l-4 border-l-red-500 text-red-900;
+}
+
+/* Painel de votação */
+.painel-votacao {
+  @apply border rounded-lg shadow p-6 bg-white;
+}
+
+.painel-resultados {
+  @apply grid grid-cols-3 gap-4 mb-4;
+}
+
+.resultado-card {
+  @apply border rounded-lg p-4 flex flex-col items-center justify-center;
+}
+
+.resultado-favor {
+  @apply border-green-500 bg-green-50;
+}
+
+.resultado-contra {
+  @apply border-red-500 bg-red-50;
+}
+
+.resultado-abstencao {
+  @apply border-yellow-500 bg-yellow-50;
+}
+
+.resultado-numero {
+  @apply text-4xl font-bold mb-2;
+}
+
+.resultado-texto {
+  @apply text-sm text-gray-600;
+}
+
+/* Lista de vereadores */
+.lista-vereadores {
+  @apply mt-6 divide-y;
+}
+
+.vereador-item {
+  @apply py-3 flex justify-between items-center;
+}
+
+.voto-indicador {
+  @apply w-3 h-3 rounded-full inline-block mr-2;
+}
+
+.voto-aprovado {
+  @apply bg-green-600;
+}
+
+.voto-reprovado {
+  @apply bg-red-600;
+}
+
+.voto-abstencao {
+  @apply bg-yellow-400;
+}
+
+.voto-pendente {
+  @apply bg-gray-300;
+}
+
+/* Animações */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animacao-pulso {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Responsivo */
+@media (max-width: 640px) {
+  .painel-resultados {
+    @apply grid-cols-1 gap-2;
+  }
+
+  .resultado-card {
+    @apply flex-row justify-between;
+  }
+
+  .resultado-numero {
+    @apply text-2xl mb-0;
+  }
 }
