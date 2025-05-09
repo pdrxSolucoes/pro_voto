@@ -1,0 +1,26 @@
+{
+  "type": "postgres",
+  "host": "localhost",
+  "port": 5234,
+  "username": "vere_voto",
+  "password": "vere_voto234",
+  "database": "vere_voto_db",
+  "synchronize": false,
+  "logging": true,
+  "maxQueryExecutionTime": 100000,
+  "migrationsTableName": "InitialSchema1721422000000",
+  "entities": [
+    "src/entity/**/*.ts"
+  ],
+  "migrations": [
+    "src/migration/**/*.ts"
+  ],
+  "subscribers": [
+    "src/subscriber/**/*.ts"
+  ],
+  "cli": {
+    "entitiesDir": "src/entity",
+    "migrationsDir": "src/migration",
+    "subscribersDir": "src/subscriber"
+  }
+}
