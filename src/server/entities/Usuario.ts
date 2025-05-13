@@ -1,5 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from "typeorm";
-import type { Voto } from "./Voto";
+// src/entities/Usuario.ts
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from "typeorm";
 
 @Entity("usuarios")
 export class Usuario {
@@ -24,13 +30,9 @@ export class Usuario {
   @Column({ default: true })
   ativo: boolean;
 
-  @Column({ default: () => "CURRENT_TIMESTAMP" })
-  data_criacao: Date;
+  @CreateDateColumn({ name: "data_criacao" })
+  dataCriacao: Date;
 
-  @Column({ default: () => "CURRENT_TIMESTAMP" })
-  data_atualizacao: Date;
-
-  // Use string literal for entity name
-  @OneToMany("Voto", "vereador")
-  votos: Voto[];
+  @UpdateDateColumn({ name: "data_atualizacao" })
+  dataAtualizacao: Date;
 }

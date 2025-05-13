@@ -6,6 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
 interface VotacaoAtiva {
   id: number;
@@ -24,7 +27,45 @@ interface HomeContent {
 
 function HomePageContent() {
   const [data, setData] = useState<HomeContent | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingHome, setLoadingHome] = useState(true);
+
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        // Verificar se existe algum administrador no sistema
+        const response = await axios.get("/api/auth/setup");
+
+        // Se não houver admin, redirecionar para página de setup
+        if (!response.data.hasAdmin) {
+          router.push("/setup");
+          return;
+        }
+
+        // Se estiver autenticado, redirecionar para dashboard
+        if (isAuthenticated) {
+          router.push("/");
+          return;
+        }
+
+        // Se não estiver autenticado e houver admin, redirecionar para login
+        router.push("/login");
+      } catch (error) {
+        console.error("Erro ao verificar configuração:", error);
+        // Em caso de erro, tentar ir para login de qualquer forma
+        router.push("/login");
+      } finally {
+        setLoadingHome(false);
+      }
+    };
+
+    // Só executa a verificação quando o estado de autenticação for conhecido
+    if (!authLoading) {
+      checkSetup();
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   // Usuário simulado (na implementação real, viria da autenticação)
   const usuario = {
@@ -39,7 +80,7 @@ function HomePageContent() {
   useEffect(() => {
     async function carregarDados() {
       try {
-        setLoading(true);
+        setLoadingHome(true);
 
         // Em um ambiente real, esta seria uma chamada de API
         // const response = await fetch('/api/dashboard');
@@ -71,11 +112,11 @@ function HomePageContent() {
         // Simular delay de API
         setTimeout(() => {
           setData(dadosDemo);
-          setLoading(false);
+          setLoadingHome(false);
         }, 1000);
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
-        setLoading(false);
+        setLoadingHome(false);
       }
     }
 
@@ -101,7 +142,7 @@ function HomePageContent() {
         </div>
       </div>
 
-      {loading ? (
+      {loadingHome ? (
         <div className="flex justify-center p-8">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>

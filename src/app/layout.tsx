@@ -1,6 +1,6 @@
 // src/app/layout.tsx
-import { AuthProvider } from "@/contexts/AuthContext";
 import { DevAuthHelper } from "@/components/DevAuthHelper";
+import { AuthProvider } from "@/contexts/AuthContext";
 import "@/styles/globals.css";
 
 export default function RootLayout({

@@ -59,7 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post("/api/auth/login", { email, password });
+      const response = await axios.post("/api/auth/login", {
+        email,
+        senha: password, // Modificado aqui para usar 'senha' em vez de 'password'
+      });
       const { token, user } = response.data;
 
       // Save to localStorage
