@@ -100,7 +100,7 @@ function EmendasContent() {
       console.error("Erro ao carregar emendas:", err);
 
       // Tratamento de erro do Axios
-      if (axios.isAxiosError(err)) {˝
+      if (axios.isAxiosError(err)) {
         // Verificar se é um erro de autenticação
         if (err.response?.status === 401) {
           // Em vez de redirecionar aqui, apenas mostramos a mensagem
