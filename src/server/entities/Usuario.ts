@@ -31,8 +31,8 @@ export class Usuario {
   ativo: boolean;
 
   @CreateDateColumn({ name: "data_criacao" })
-  dataCriacao: Date;
+  data_criacao: Date;
 
   @UpdateDateColumn({ name: "data_atualizacao" })
-  dataAtualizacao: Date;
+  data_atualizacao: Date;
 }

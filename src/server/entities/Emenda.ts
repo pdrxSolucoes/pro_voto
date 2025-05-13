@@ -7,7 +7,9 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
-import type { Votacao } from "./Votacao";
+import { Votacao } from "./Votacao"; // Isso está criando a referência circular
+
+export type EmendaStatus = "pendente" | "em_votacao" | "aprovada" | "reprovada";
 
 @Entity("emendas")
 export class Emenda {
@@ -17,10 +19,10 @@ export class Emenda {
   @Column()
   titulo: string;
 
-  @Column()
+  @Column({ type: "text" })
   descricao: string;
 
-  @Column()
+  @Column({ name: "data_apresentacao", type: "timestamp" })
   data_apresentacao: Date;
 
   @Column({
@@ -28,15 +30,15 @@ export class Emenda {
     enum: ["pendente", "em_votacao", "aprovada", "reprovada"],
     default: "pendente",
   })
-  status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
+  status: EmendaStatus;
 
-  @Column({ default: () => "CURRENT_TIMESTAMP" })
+  @CreateDateColumn({ name: "data_criacao" })
   data_criacao: Date;
 
-  @Column({ default: () => "CURRENT_TIMESTAMP" })
+  @UpdateDateColumn({ name: "data_atualizacao" })
   data_atualizacao: Date;
 
-  // Use string literal for entity name instead of class reference
+  // Use uma função de tipo para evitar importar diretamente a classe Votacao
   @OneToMany("Votacao", "emenda")
   votacoes: Votacao[];
 }

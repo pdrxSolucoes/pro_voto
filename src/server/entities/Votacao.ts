@@ -9,49 +9,49 @@ import {
   OneToMany,
   JoinColumn,
 } from "typeorm";
-import type { Voto } from "./Voto"; // Import as type only
-import { Emenda } from "./Emenda";
+import { Emenda } from "./Emenda"; // Isso está criando a referência circular
+import { Voto } from "./Voto";
+
+export type VotacaoResultado = "aprovada" | "reprovada" | "em_andamento";
 
 @Entity("votacoes")
 export class Votacao {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: "emenda_id" })
-  emendaId: number;
+  // Use uma função de tipo para evitar importar diretamente a classe Emenda
+  @ManyToOne("Emenda", "votacoes")
+  @JoinColumn({ name: "emenda_id" })
+  emenda: Emenda;
 
-  @Column({ type: "timestamp" })
+  @Column({ name: "data_inicio", type: "timestamp" })
   dataInicio: Date;
 
-  @Column({ type: "timestamp", nullable: true })
-  dataFim: Date;
+  @Column({ name: "data_fim", type: "timestamp", nullable: true })
+  dataFim: Date | null;
 
   @Column({
     type: "enum",
     enum: ["aprovada", "reprovada", "em_andamento"],
     default: "em_andamento",
   })
-  resultado: string;
+  resultado: VotacaoResultado;
 
-  @Column({ default: 0 })
+  @Column({ name: "votos_favor", default: 0 })
   votosFavor: number;
 
-  @Column({ default: 0 })
+  @Column({ name: "votos_contra", default: 0 })
   votosContra: number;
 
   @Column({ default: 0 })
   abstencoes: number;
 
   @CreateDateColumn({ name: "data_criacao" })
-  dataCriacao: Date;
+  data_criacao: Date;
 
   @UpdateDateColumn({ name: "data_atualizacao" })
-  dataAtualizacao: Date;
+  data_atualizacao: Date;
 
-  @ManyToOne(() => Emenda, (emenda) => emenda.votacoes)
-  @JoinColumn({ name: "emenda_id" })
-  emenda: Emenda;
-
-  @OneToMany("Voto", "votacao") // Use string references instead of imported classes
+  @OneToMany(() => Voto, (voto) => voto.votacao)
   votos: Voto[];
 }

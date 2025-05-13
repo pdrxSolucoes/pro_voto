@@ -1,4 +1,4 @@
-// src/app/emendas/page.tsx - updated with auth context
+// src/app/emendas/page.tsx - versão atualizada
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/Notification";
 import { EmendaFormModal } from "@/components/ui/Modal/ModalEmenda";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 interface Emenda {
   id: number;
@@ -32,12 +33,25 @@ const api = axios.create({
 
 // Set up Axios interceptor to include auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("authToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Verifica se estamos no navegador antes de acessar localStorage
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
+
+// Novo interceptor para tratar erros 401 sem causar redirecionamentos infinitos
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Não redirecionamos aqui para evitar loops
+    // Apenas propagamos o erro para ser tratado no componente
+    return Promise.reject(error);
+  }
+);
 
 function EmendasContent() {
   const [emendas, setEmendas] = useState<Emenda[]>([]);
@@ -48,21 +62,38 @@ function EmendasContent() {
     undefined
   );
 
-  // Use the auth context
-  const { isAdmin } = useAuth();
+  // Use o contexto de autenticação e o router
+  const { isAdmin, user, loading: authLoading } = useAuth();
   const { addNotification } = useNotifications();
+  const router = useRouter();
 
-  // Carregar as emendas ao iniciar
+  // Verificar autenticação antes de carregar dados
   useEffect(() => {
-    carregarEmendas();
-  }, []);
+    // Aguardar a verificação de autenticação terminar
+    if (!authLoading) {
+      if (!user) {
+        // Redirecionar para login se não estiver autenticado
+        router.push("/login");
+      } else {
+        // Carregar emendas apenas se estiver autenticado
+        carregarEmendas();
+      }
+    }
+  }, [user, authLoading, router]);
 
   async function carregarEmendas() {
     try {
       setLoading(true);
 
+      // Verificar token antes de fazer a requisição
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        throw new Error("Usuário não autenticado");
+      }
+
       // Usando Axios para buscar as emendas
       const response = await api.get("/emendas");
+      console.log("res emendas", response.data);
       setEmendas(response.data);
       setError(null);
     } catch (err) {
@@ -70,6 +101,18 @@ function EmendasContent() {
 
       // Tratamento de erro do Axios
       if (axios.isAxiosError(err)) {
+        // Verificar se é um erro de autenticação
+        if (err.response?.status === 401) {
+          // Em vez de redirecionar aqui, apenas mostramos a mensagem
+          addNotification("Sessão expirada. Faça login novamente.", "error");
+          setError(new Error("Sessão expirada. Faça login novamente."));
+
+          // Limpar token e redirecionar manualmente
+          localStorage.removeItem("authToken");
+          router.push("/login");
+          return;
+        }
+
         // Verificar se é um erro de rede
         if (err.code === "ECONNABORTED" || !err.response) {
           const errorMessage =
@@ -176,6 +219,16 @@ function EmendasContent() {
 
       // Tratamento de erro do Axios
       if (axios.isAxiosError(err)) {
+        // Verificar se é um erro de autenticação
+        if (err.response?.status === 401) {
+          addNotification("Sessão expirada. Faça login novamente.", "error");
+
+          // Limpar token e redirecionar manualmente
+          localStorage.removeItem("authToken");
+          router.push("/login");
+          return;
+        }
+
         // Verificar se é um erro de rede
         if (err.code === "ECONNABORTED" || !err.response) {
           const errorMessage =

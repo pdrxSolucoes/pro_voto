@@ -7,113 +7,68 @@ import { verifyAuthToken } from "@/lib/auth";
 // GET all emendas
 export async function GET(request: Request) {
   try {
+    // Obter token do cabeçalho de autorização
     const token = request.headers.get("Authorization")?.split(" ")[1];
+    console.log("token", token);
 
-    // Verify auth token
+    // Verificar token d,e autenticação
     const authResult = await verifyAuthToken(token);
+
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
 
-    // Get emendas repository
+    // Obter repositório de emendas
     const emendaRepository = await getRepository(Emenda);
 
-    // Get query parameters
+    // Obter parâmetros de consulta
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
-    // Build query options
+    // Construir opções de consulta
     let queryOptions: any = {
-      order: { dataCriacao: "DESC" },
-      relations: ["votacoes"],
+      order: { data_criacao: "DESC" }, // Verifique se este é o nome correto da coluna no PostgreSQL
     };
 
-    // Add status filter if provided
+    // Adicionar filtro de status, se fornecido
     if (status) {
       queryOptions.where = { status };
     }
 
-    // Get all emendas
-    const emendas = await emendaRepository.find(queryOptions);
+    // Buscar emendas com tratamento de erro detalhado
+    console.log("Buscando emendas com opções:", JSON.stringify(queryOptions));
 
-    return NextResponse.json(emendas);
+    try {
+      // Primeiro tente sem relações para ver se o problema está aí
+      const emendas = await emendaRepository.find(queryOptions);
+      console.log(`Encontradas ${emendas.length} emendas`);
+
+      return NextResponse.json(emendas);
+    } catch (innerError: any) {
+      console.error("Erro na consulta find():", innerError);
+
+      // Tente uma consulta mais simples para diagnóstico
+      const simplesEmendas = await emendaRepository
+        .createQueryBuilder("emenda")
+        .getMany();
+      console.log(`Consulta simples retornou ${simplesEmendas.length} emendas`);
+
+      return NextResponse.json(
+        {
+          error: "Erro na consulta de emendas",
+          details: innerError.message,
+          fallback: simplesEmendas,
+        },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
-    console.error("Error fetching emendas:", error);
+    console.error("Erro geral ao buscar emendas:", error);
 
-    // Send more detailed error for debugging
+    // Enviar erro detalhado para depuração
     return NextResponse.json(
       {
         error: "Erro ao buscar emendas",
-        details: error.message,
-        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// POST new emenda
-export async function POST(request: Request) {
-  try {
-    const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    // Verify auth token
-    const authResult = await verifyAuthToken(token);
-    if (!authResult.success) {
-      return NextResponse.json({ error: authResult.message }, { status: 401 });
-    }
-
-    // Check admin permission
-    if (authResult.user?.cargo !== "admin") {
-      return NextResponse.json(
-        {
-          error:
-            "Permissão negada. Apenas administradores podem criar emendas.",
-        },
-        { status: 403 }
-      );
-    }
-
-    // Parse request body with error handling
-    let body;
-    try {
-      const rawText = await request.text();
-      body = JSON.parse(rawText);
-    } catch (error) {
-      console.error("Error parsing request body:", error);
-      return NextResponse.json(
-        { error: "Formato de requisição inválido. Verifique o JSON enviado." },
-        { status: 400 }
-      );
-    }
-
-    const { titulo, descricao } = body;
-
-    // Validate input
-    if (!titulo || !descricao) {
-      return NextResponse.json(
-        { error: "Título e descrição são obrigatórios" },
-        { status: 400 }
-      );
-    }
-
-    // Create new emenda
-    const emendaRepository = await getRepository(Emenda);
-    const emenda = emendaRepository.create({
-      titulo,
-      descricao,
-      dataApresentacao: new Date(),
-      status: "pendente",
-    });
-
-    // Save to database
-    const savedEmenda = await emendaRepository.save(emenda);
-    return NextResponse.json(savedEmenda, { status: 201 });
-  } catch (error: any) {
-    console.error("Error creating emenda:", error);
-    return NextResponse.json(
-      {
-        error: "Erro ao criar emenda",
         details: error.message,
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
