@@ -18,7 +18,7 @@ interface Emenda {
   id: number;
   titulo: string;
   descricao: string;
-  dataApresentacao: string;
+  data_apresentacao: string;
   status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
 }
 
@@ -94,13 +94,13 @@ function EmendasContent() {
       // Usando Axios para buscar as emendas
       const response = await api.get("/emendas");
       console.log("res emendas", response.data);
-      setEmendas(response.data);
+      setEmendas(response.data.data);
       setError(null);
     } catch (err) {
       console.error("Erro ao carregar emendas:", err);
 
       // Tratamento de erro do Axios
-      if (axios.isAxiosError(err)) {
+      if (axios.isAxiosError(err)) {˝
         // Verificar se é um erro de autenticação
         if (err.response?.status === 401) {
           // Em vez de redirecionar aqui, apenas mostramos a mensagem
@@ -286,20 +286,21 @@ function EmendasContent() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {emendas.map((emenda) => (
-            <EmendaCard
-              key={emenda.id}
-              id={emenda.id}
-              titulo={emenda.titulo}
-              descricao={emenda.descricao}
-              dataApresentacao={emenda.dataApresentacao}
-              status={emenda.status}
-              onIniciarVotacao={handleIniciarVotacao}
-              onVerDetalhes={handleVerDetalhes}
-              onEditar={handleEditar}
-              isAdmin={isAdmin}
-            />
-          ))}
+          {emendas.length > 0 &&
+            emendas.map((emenda) => (
+              <EmendaCard
+                key={emenda.id}
+                id={emenda.id}
+                titulo={emenda.titulo}
+                descricao={emenda.descricao}
+                dataApresentacao={emenda.data_apresentacao}
+                status={emenda.status}
+                onIniciarVotacao={handleIniciarVotacao}
+                onVerDetalhes={handleVerDetalhes}
+                onEditar={handleEditar}
+                isAdmin={isAdmin}
+              />
+            ))}
         </div>
       )}
 

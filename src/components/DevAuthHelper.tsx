@@ -60,7 +60,7 @@ export function DevAuthHelper() {
   }
 
   return (
-    <div className="fixed top-0 right-0 m-4 p-4 bg-gray-100 border rounded shadow-md max-w-sm z-50">
+    <div className="fixed top-0 right-0 m-4 p-4 bg-gray-100 border rounded shadow-md max-w-sm z-50 invisible">
       <h3 className="text-lg font-bold mb-2">Helper de Desenvolvimento</h3>
 
       {error && (

@@ -6,7 +6,7 @@ interface Emenda {
   id: number;
   titulo: string;
   descricao: string;
-  dataApresentacao: string;
+  data_apresentacao: string;
   status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
 }
 
