@@ -4,19 +4,33 @@ import { authenticateUser } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    console.log(request);
-    const body = await request.json();
-    const { email, senha } = body;
+    let email, senha;
 
-    console.log("Dados JSON processados:", { email });
+    // Verificar o Content-Type
+    const contentType = request.headers.get("Content-Type") || "";
+
+    if (contentType.includes("application/json")) {
+      // Processar como JSON
+      const body = await request.json();
+      email = body.email;
+      senha = body.senha;
+    } else if (
+      contentType.includes("multipart/form-data") ||
+      contentType.includes("application/x-www-form-urlencoded")
+    ) {
+      // Processar como Form Data
+      const formData = await request.formData();
+      email = formData.get("email") as string;
+      senha = formData.get("senha") as string;
+    } else {
+      return NextResponse.json(
+        { error: "Formato de dados não suportado" },
+        { status: 415 }
+      );
+    }
 
     // Validar campos obrigatórios
     if (!email || !senha) {
-      console.warn("Campos obrigatórios ausentes", {
-        emailFornecido: !!email,
-        senhaFornecida: !!senha,
-      });
-
       return NextResponse.json(
         { error: "Email e senha são obrigatórios" },
         { status: 400 }
@@ -24,21 +38,16 @@ export async function POST(request: Request) {
     }
 
     // Autenticar usuário
-    console.log("Autenticando usuário:", email);
     const result = await authenticateUser(email, senha);
 
     if (!result.success) {
-      console.log("Falha na autenticação:", result.message);
       return NextResponse.json({ error: result.message }, { status: 401 });
     }
 
-    console.log("Autenticação bem-sucedida para:", email);
     return NextResponse.json(result);
   } catch (error) {
-    // Tratamento detalhado de erros
     console.error("Erro no processamento de login:", error);
 
-    // Verificar se é um erro conhecido e fornecer mensagem específica
     if (error instanceof Error) {
       return NextResponse.json(
         {
@@ -49,22 +58,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Erro genérico
     return NextResponse.json(
       { error: "Ocorreu um erro inesperado durante o login" },
       { status: 500 }
     );
   }
-}
-
-// Opcional: adicionar endpoint OPTIONS para lidar com CORS preflight
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    },
-  });
 }
