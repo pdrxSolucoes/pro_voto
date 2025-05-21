@@ -17,6 +17,9 @@ api.interceptors.request.use((config) => {
     const token = localStorage.getItem("authToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+      console.log("🔑 Token adicionado ao header da requisição");
+    } else {
+      console.log("⚠️ Nenhum token encontrado para adicionar ao header");
     }
   }
   return config;
@@ -26,7 +29,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Não redirecionamos automaticamente aqui para evitar ciclos
+    // Se receber 401 (não autorizado), limpar dados de autenticação
+    if (error.response?.status === 401) {
+      console.log("❌ Token expirado ou inválido (401), limpando dados");
+      authUtils.logout();
+    }
     return Promise.reject(error);
   }
 );
@@ -35,7 +42,12 @@ api.interceptors.response.use(
 export const authUtils = {
   getToken: () => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("authToken");
+      const token = localStorage.getItem("authToken");
+      console.log(
+        "🔍 Buscando token no localStorage:",
+        token ? "✅ Encontrado" : "❌ Não encontrado"
+      );
+      return token;
     }
     return null;
   },
@@ -43,12 +55,14 @@ export const authUtils = {
   setToken: (token: string) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("authToken", token);
+      console.log("💾 Token salvo no localStorage com sucesso");
     }
   },
 
   removeToken: () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("authToken");
+      console.log("🗑️ Token removido do localStorage");
     }
   },
 
@@ -57,10 +71,16 @@ export const authUtils = {
       const userStr = localStorage.getItem("user");
       if (userStr) {
         try {
-          return JSON.parse(userStr);
-        } catch {
+          const user = JSON.parse(userStr);
+          console.log("👤 Usuário obtido do localStorage:", user.nome);
+          return user;
+        } catch (error) {
+          console.error("❌ Erro ao fazer parse do usuário:", error);
+          localStorage.removeItem("user"); // Remove dados corrompidos
           return null;
         }
+      } else {
+        console.log("👤 Nenhum usuário encontrado no localStorage");
       }
     }
     return null;
@@ -69,19 +89,35 @@ export const authUtils = {
   setUser: (user: any) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(user));
+      console.log("💾 Usuário salvo no localStorage:", user.nome);
     }
   },
 
   removeUser: () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("user");
+      console.log("🗑️ Usuário removido do localStorage");
     }
   },
 
   logout: () => {
+    console.log("🚪 Executando logout completo...");
     authUtils.removeToken();
     authUtils.removeUser();
-    // Observação: o redirecionamento deve ser feito pelo componente que chama este método
+    console.log("✅ Logout concluído");
+  },
+
+  // Nova função para verificar se os dados estão persistidos
+  checkPersistence: () => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("authToken");
+      const user = localStorage.getItem("user");
+      console.log("🔍 Verificação de persistência:");
+      console.log("  Token:", token ? "✅ Presente" : "❌ Ausente");
+      console.log("  Usuário:", user ? "✅ Presente" : "❌ Ausente");
+      return { hasToken: !!token, hasUser: !!user };
+    }
+    return { hasToken: false, hasUser: false };
   },
 };
 
@@ -185,23 +221,38 @@ export const projetosApi = {
 export const authApi = {
   login: async (email: string, senha: string) => {
     try {
+      console.log("🔐 Iniciando processo de login...");
       const response = await api.post("/auth/login", { email, senha });
 
-      if (response.data.token) {
+      if (response.data.success && response.data.token) {
+        console.log("✅ Login bem-sucedido, salvando dados...");
+
+        // Salvar token e usuário
         authUtils.setToken(response.data.token);
         authUtils.setUser(response.data.user);
-      }
 
-      return {
-        success: true,
-        data: response.data,
-      };
+        // Verificar se foi salvo corretamente
+        authUtils.checkPersistence();
+
+        return {
+          success: true,
+          data: response.data,
+        };
+      } else {
+        console.log("❌ Login falhou:", response.data.message);
+        return {
+          success: false,
+          error: response.data.message || "Erro no login",
+        };
+      }
     } catch (error) {
-      console.error("Erro ao fazer login:", error);
+      console.error("❌ Erro ao fazer login:", error);
       return {
         success: false,
         error: axios.isAxiosError(error)
-          ? error.response?.data?.error || "Erro ao fazer login"
+          ? error.response?.data?.error ||
+            error.response?.data?.message ||
+            "Erro ao fazer login"
           : "Erro ao fazer login",
       };
     }
@@ -215,33 +266,61 @@ export const authApi = {
   getUser: authUtils.getUser,
 
   isAuthenticated: () => {
-    return !!authUtils.getToken();
+    const hasToken = !!authUtils.getToken();
+    console.log(
+      "🔍 Verificando autenticação:",
+      hasToken ? "✅ Autenticado" : "❌ Não autenticado"
+    );
+    return hasToken;
   },
 
   validateToken: async () => {
     try {
+      console.log("🔄 Validando token...");
       const token = authUtils.getToken();
+
       if (!token) {
+        console.log("❌ Token não encontrado para validação");
         return { success: false, error: "Token não encontrado" };
       }
 
       const response = await api.get("/auth/validate");
-      return {
-        success: true,
-        data: response.data,
-      };
+
+      if (response.data.success) {
+        console.log("✅ Token válido");
+
+        // Atualizar dados do usuário se retornados
+        if (response.data.user) {
+          authUtils.setUser(response.data.user);
+        }
+
+        return {
+          success: true,
+          data: response.data,
+        };
+      } else {
+        console.log("❌ Token inválido:", response.data.message);
+        authUtils.logout();
+        return {
+          success: false,
+          error: response.data.message || "Token inválido",
+        };
+      }
     } catch (error) {
-      console.error("Erro ao validar token:", error);
+      console.error("❌ Erro ao validar token:", error);
 
       // Se token inválido/expirado, limpar localstorage
       if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.log("🧹 Token expirado, limpando dados...");
         authUtils.logout();
       }
 
       return {
         success: false,
         error: axios.isAxiosError(error)
-          ? error.response?.data?.error || "Erro ao validar token"
+          ? error.response?.data?.error ||
+            error.response?.data?.message ||
+            "Erro ao validar token"
           : "Erro ao validar token",
       };
     }

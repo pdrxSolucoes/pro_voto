@@ -41,39 +41,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const verifyAuth = async () => {
       try {
-        // Verificar se há um token no localStorage
-        const token = authUtils.getToken();
-        if (!token) {
+        console.log("🚀 Iniciando verificação de autenticação...");
+
+        // Primeiro, verificar persistência dos dados
+        const persistence = authUtils.checkPersistence();
+
+        if (!persistence.hasToken) {
+          console.log("❌ Nenhum token encontrado, usuário não autenticado");
           setLoading(false);
           return;
         }
 
-        // Obter o usuário armazenado
+        // Obter o usuário armazenado primeiro
         const storedUser = authUtils.getUser();
         if (storedUser) {
+          console.log("👤 Definindo usuário do localStorage:", storedUser.nome);
           setUser(storedUser);
         }
 
-        // Verificar a validade do token
+        // Validar token no servidor
+        console.log("🔄 Validando token no servidor...");
         const validationResult = await authApi.validateToken();
+
         if (validationResult.success) {
-          // Se o usuário não foi definido a partir do localStorage
-          if (!storedUser && validationResult.data?.user) {
+          console.log("✅ Token válido confirmado pelo servidor");
+
+          // Atualizar usuário se retornado pela validação
+          if (validationResult.data?.user) {
+            console.log("🔄 Atualizando dados do usuário da validação");
             setUser(validationResult.data.user);
             authUtils.setUser(validationResult.data.user);
           }
         } else {
-          // Token inválido, limpar autenticação
+          console.log(
+            "❌ Token inválido, limpando autenticação:",
+            validationResult.error
+          );
+          // Token inválido, limpar tudo
           authUtils.logout();
           setUser(null);
         }
       } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
-        // Em caso de erro, manter o usuário deslogado
+        console.error("❌ Erro crítico na verificação de autenticação:", error);
+        // Em caso de erro crítico, limpar autenticação
         authUtils.logout();
         setUser(null);
       } finally {
         setLoading(false);
+        console.log("✅ Verificação de autenticação concluída");
       }
     };
 
@@ -82,16 +97,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, senha: string) => {
     try {
+      console.log("🔐 Tentativa de login para:", email);
       const result = await authApi.login(email, senha);
 
-      if (result.success) {
+      if (result.success && result.data) {
+        console.log("✅ Login realizado com sucesso");
         setUser(result.data.user);
+
+        // Verificar se os dados foram persistidos corretamente
+        setTimeout(() => {
+          authUtils.checkPersistence();
+        }, 100);
+
         return { success: true };
       }
 
+      console.log("❌ Falha no login:", result.error);
       return { success: false, error: result.error };
     } catch (error) {
-      console.error("Erro ao fazer login:", error);
+      console.error("❌ Erro crítico no login:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Erro ao fazer login",
@@ -100,10 +124,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    console.log("🚪 Iniciando logout...");
     authApi.logout();
     setUser(null);
     router.push("/login");
   };
+
+  // Debug: Verificar estado atual
+  useEffect(() => {
+    if (!loading) {
+      console.log("📊 Estado atual da autenticação:");
+      console.log("  User:", user ? user.nome : "null");
+      console.log("  Loading:", loading);
+      console.log("  IsAdmin:", user?.cargo === "admin");
+      console.log("  IsAuthenticated:", !!user);
+    }
+  }, [user, loading]);
 
   return (
     <AuthContext.Provider
