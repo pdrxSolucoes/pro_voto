@@ -9,7 +9,7 @@ export class CreateTables1721422000000 implements MigrationInterface {
       `CREATE TYPE "public"."usuario_cargo_enum" AS ENUM('vereador', 'admin')`
     );
     await queryRunner.query(
-      `CREATE TYPE "public"."emenda_status_enum" AS ENUM('pendente', 'em_votacao', 'aprovada', 'reprovada')`
+      `CREATE TYPE "public"."projeto_status_enum" AS ENUM('pendente', 'em_votacao', 'aprovada', 'reprovada')`
     );
     await queryRunner.query(
       `CREATE TYPE "public"."votacao_resultado_enum" AS ENUM('aprovada', 'reprovada', 'em_andamento')`
@@ -34,14 +34,14 @@ export class CreateTables1721422000000 implements MigrationInterface {
             )
         `);
 
-    // Create emendas table
+    // Create projetos table
     await queryRunner.query(`
-            CREATE TABLE "emendas" (
+            CREATE TABLE "projetos" (
                 "id" SERIAL NOT NULL,
                 "titulo" character varying NOT NULL,
                 "descricao" character varying NOT NULL,
                 "data_apresentacao" TIMESTAMP NOT NULL,
-                "status" "public"."emenda_status_enum" NOT NULL DEFAULT 'pendente',
+                "status" "public"."projeto_status_enum" NOT NULL DEFAULT 'pendente',
                 "data_criacao" TIMESTAMP NOT NULL DEFAULT now(),
                 "data_atualizacao" TIMESTAMP NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_968b3adb2a95770c7d3e3cd9f26" PRIMARY KEY ("id")
@@ -52,7 +52,7 @@ export class CreateTables1721422000000 implements MigrationInterface {
     await queryRunner.query(`
             CREATE TABLE "votacoes" (
                 "id" SERIAL NOT NULL,
-                "emenda_id" integer NOT NULL,
+                "projeto_id" integer NOT NULL,
                 "data_inicio" TIMESTAMP NOT NULL,
                 "data_fim" TIMESTAMP,
                 "resultado" "public"."votacao_resultado_enum" NOT NULL DEFAULT 'em_andamento',
@@ -80,9 +80,9 @@ export class CreateTables1721422000000 implements MigrationInterface {
     // Add foreign key constraints
     await queryRunner.query(`
             ALTER TABLE "votacoes" 
-            ADD CONSTRAINT "FK_votacoes_emenda_id" 
-            FOREIGN KEY ("emenda_id") 
-            REFERENCES "emendas"("id") 
+            ADD CONSTRAINT "FK_votacoes_projeto_id" 
+            FOREIGN KEY ("projeto_id") 
+            REFERENCES "projetos"("id") 
             ON DELETE CASCADE
         `);
 
@@ -125,7 +125,7 @@ export class CreateTables1721422000000 implements MigrationInterface {
       `ALTER TABLE "votos" DROP CONSTRAINT "FK_votos_votacao_id"`
     );
     await queryRunner.query(
-      `ALTER TABLE "votacoes" DROP CONSTRAINT "FK_votacoes_emenda_id"`
+      `ALTER TABLE "votacoes" DROP CONSTRAINT "FK_votacoes_projeto_id"`
     );
 
     // Drop unique constraint
@@ -136,13 +136,13 @@ export class CreateTables1721422000000 implements MigrationInterface {
     // Drop tables
     await queryRunner.query(`DROP TABLE "votos"`);
     await queryRunner.query(`DROP TABLE "votacoes"`);
-    await queryRunner.query(`DROP TABLE "emendas"`);
+    await queryRunner.query(`DROP TABLE "projetos"`);
     await queryRunner.query(`DROP TABLE "usuarios"`);
 
     // Drop enum types
     await queryRunner.query(`DROP TYPE "public"."voto_voto_enum"`);
     await queryRunner.query(`DROP TYPE "public"."votacao_resultado_enum"`);
-    await queryRunner.query(`DROP TYPE "public"."emenda_status_enum"`);
+    await queryRunner.query(`DROP TYPE "public"."projeto_status_enum"`);
     await queryRunner.query(`DROP TYPE "public"."usuario_cargo_enum"`);
   }
 }

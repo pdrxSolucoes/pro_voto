@@ -85,58 +85,58 @@ export const authUtils = {
   },
 };
 
-// API de emendas
-export const emendasApi = {
+// API de projetos
+export const projetosApi = {
   getAll: async () => {
     try {
-      const response = await api.get("/emendas");
+      const response = await api.get("/projetos");
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error("Erro ao buscar emendas:", error);
+      console.error("Erro ao buscar projetos:", error);
       return {
         success: false,
         error: axios.isAxiosError(error)
-          ? error.response?.data?.error || "Erro ao buscar emendas"
-          : "Erro ao buscar emendas",
+          ? error.response?.data?.error || "Erro ao buscar projetos"
+          : "Erro ao buscar projetos",
       };
     }
   },
 
   getById: async (id: number) => {
     try {
-      const response = await api.get(`/emendas/${id}`);
+      const response = await api.get(`/projetos/${id}`);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error(`Erro ao buscar emenda ${id}:`, error);
+      console.error(`Erro ao buscar projeto ${id}:`, error);
       return {
         success: false,
         error: axios.isAxiosError(error)
-          ? error.response?.data?.error || `Erro ao buscar emenda ${id}`
-          : `Erro ao buscar emenda ${id}`,
+          ? error.response?.data?.error || `Erro ao buscar projeto ${id}`
+          : `Erro ao buscar projeto ${id}`,
       };
     }
   },
 
   create: async (data: { titulo: string; descricao: string }) => {
     try {
-      const response = await api.post("/emendas", data);
+      const response = await api.post("/projetos", data);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error("Erro ao criar emenda:", error);
+      console.error("Erro ao criar projeto:", error);
       return {
         success: false,
         error: axios.isAxiosError(error)
-          ? error.response?.data?.error || "Erro ao criar emenda"
-          : "Erro ao criar emenda",
+          ? error.response?.data?.error || "Erro ao criar projeto"
+          : "Erro ao criar projeto",
       };
     }
   },
@@ -146,31 +146,31 @@ export const emendasApi = {
     data: { titulo?: string; descricao?: string; status?: string }
   ) => {
     try {
-      const response = await api.put(`/emendas/${id}`, data);
+      const response = await api.put(`/projetos/${id}`, data);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error(`Erro ao atualizar emenda ${id}:`, error);
+      console.error(`Erro ao atualizar projeto ${id}:`, error);
       return {
         success: false,
         error: axios.isAxiosError(error)
-          ? error.response?.data?.error || `Erro ao atualizar emenda ${id}`
-          : `Erro ao atualizar emenda ${id}`,
+          ? error.response?.data?.error || `Erro ao atualizar projeto ${id}`
+          : `Erro ao atualizar projeto ${id}`,
       };
     }
   },
 
   iniciarVotacao: async (id: number) => {
     try {
-      const response = await api.post(`/emendas/${id}/iniciar-votacao`);
+      const response = await api.post(`/projetos/${id}/iniciar-votacao`);
       return {
         success: true,
         data: response.data,
       };
     } catch (error) {
-      console.error(`Erro ao iniciar votação para emenda ${id}:`, error);
+      console.error(`Erro ao iniciar votação para projeto ${id}:`, error);
       return {
         success: false,
         error: axios.isAxiosError(error)

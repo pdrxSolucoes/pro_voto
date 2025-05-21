@@ -10,7 +10,7 @@ export type Vereador = {
 
 export type ResultadoVotacao = {
   id: number;
-  emenda: {
+  projeto: {
     id: number;
     titulo: string;
     descricao: string;
@@ -123,18 +123,21 @@ export function useIniciarVotacao() {
   const [error, setError] = useState<Error | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const iniciarVotacao = useCallback(async (emendaId: number) => {
+  const iniciarVotacao = useCallback(async (projetoId: number) => {
     setLoading(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const response = await fetch(`/api/emendas/${emendaId}/iniciar-votacao`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        `/api/projetos/${projetoId}/iniciar-votacao`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();

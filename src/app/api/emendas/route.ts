@@ -1,49 +1,40 @@
-// src/app/api/emendas/route.ts
+// src/app/api/projetos/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getRepository } from "@/lib/db";
-import { Emenda } from "@/server/entities/Emenda";
+import { Projeto } from "@/server/entities/Projeto";
 import { verifyAuthToken } from "@/lib/auth";
 
-// GET all emendas
+// GET all projetos
 export async function GET(request: NextRequest) {
   try {
-    // Obter token do cabeçalho de autorização
     const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    // Verificar token de autenticação
     const authResult = await verifyAuthToken(token);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
 
-    // Obter repositório de emendas
-    const emendaRepository = await getRepository(Emenda);
+    const projetoRepository = await getRepository(Projeto);
 
-    // Obter parâmetros de consulta
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get("status");
     const limit = parseInt(searchParams.get("limit") || "50");
     const page = parseInt(searchParams.get("page") || "1");
     const skip = (page - 1) * limit;
 
-    // Construir query base
-    const queryBuilder = emendaRepository
-      .createQueryBuilder("emenda")
-      .orderBy("emenda.data_criacao", "DESC")
+    const queryBuilder = projetoRepository
+      .createQueryBuilder("projeto")
+      .orderBy("projeto.data_criacao", "DESC")
       .take(limit)
       .skip(skip);
 
-    // Adicionar filtro de status, se fornecido
     if (status) {
-      queryBuilder.andWhere("emenda.status = :status", { status });
+      queryBuilder.andWhere("projeto.status = :status", { status });
     }
 
-    // Executar a consulta
-    const [emendas, total] = await queryBuilder.getManyAndCount();
+    const [projetos, total] = await queryBuilder.getManyAndCount();
 
-    // Retornar resultados paginados
     return NextResponse.json({
-      data: emendas,
+      data: projetos,
       meta: {
         total,
         page,
@@ -52,20 +43,19 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar emendas:", error);
+    console.error("Erro ao buscar projetos:", error);
     return NextResponse.json({ error: error }, { status: 500 });
   }
 }
 
-// GET uma emenda específica por ID
+// GET um projeto específico por ID
 export async function HEAD(request: NextRequest) {
   return handleGetById(request, true);
 }
 
-// POST criar nova emenda
+// POST criar novo projeto
 export async function POST(request: NextRequest) {
   try {
-    // Validar autenticação
     const token = request.headers.get("Authorization")?.split(" ")[1];
     const authResult = await verifyAuthToken(token);
 
@@ -73,18 +63,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
 
-    // Verificar se o usuário é admin
     if (authResult.user?.cargo !== "admin") {
       return NextResponse.json(
-        { error: "Apenas administradores podem criar emendas" },
+        { error: "Apenas administradores podem criar projetos" },
         { status: 403 }
       );
     }
 
-    // Obter dados da requisição
     const data = await request.json();
 
-    // Validar dados
     if (!data.titulo || !data.descricao) {
       return NextResponse.json(
         { error: "Título e descrição são obrigatórios" },
@@ -92,9 +79,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Criar nova emenda
-    const emendaRepository = await getRepository(Emenda);
-    const novaEmenda = emendaRepository.create({
+    const projetoRepository = await getRepository(Projeto);
+    const novoProjeto = projetoRepository.create({
       titulo: data.titulo,
       descricao: data.descricao,
       data_apresentacao: data.data_apresentacao || new Date(),
@@ -103,20 +89,18 @@ export async function POST(request: NextRequest) {
       data_atualizacao: new Date(),
     });
 
-    // Salvar emenda no banco
-    const emendaSalva = await emendaRepository.save(novaEmenda);
+    const projetoSalvo = await projetoRepository.save(novoProjeto);
 
-    return NextResponse.json(emendaSalva, { status: 201 });
+    return NextResponse.json(projetoSalvo, { status: 201 });
   } catch (error) {
-    console.error("Erro ao criar emenda:", error);
+    console.error("Erro ao criar projeto:", error);
     return NextResponse.json({ error: error }, { status: 500 });
   }
 }
 
-// Função auxiliar para obter uma emenda por ID
+// Função auxiliar para obter um projeto por ID
 async function handleGetById(request: NextRequest, headOnly = false) {
   try {
-    // Validar autenticação
     const token = request.headers.get("Authorization")?.split(" ")[1];
     const authResult = await verifyAuthToken(token);
 
@@ -124,39 +108,36 @@ async function handleGetById(request: NextRequest, headOnly = false) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
 
-    // Extrair ID da URL
     const id = request.nextUrl.pathname.split("/").pop();
     if (!id || isNaN(Number(id))) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    // Buscar emenda
-    const emendaRepository = await getRepository(Emenda);
-    const emenda = await emendaRepository.findOne({
+    const projetoRepository = await getRepository(Projeto);
+    const projeto = await projetoRepository.findOne({
       where: { id: parseInt(id) },
     });
 
-    if (!emenda) {
+    if (!projeto) {
       return NextResponse.json(
-        { error: "Emenda não encontrada" },
+        { error: "Projeto não encontrado" },
         { status: 404 }
       );
     }
 
-    // Para HEAD requests, retornar apenas cabeçalhos
     if (headOnly) {
       return new NextResponse(null, {
         status: 200,
         headers: {
           "X-Resource-Found": "true",
-          "Last-Modified": emenda.data_atualizacao.toISOString(),
+          "Last-Modified": projeto.data_atualizacao.toISOString(),
         },
       });
     }
 
-    return NextResponse.json(emenda);
+    return NextResponse.json(projeto);
   } catch (error) {
-    console.error(`Erro ao buscar emenda por ID:`, error);
+    console.error(`Erro ao buscar projeto por ID:`, error);
     return NextResponse.json({ error: error }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-// src/server/entities/Emenda.ts
+// src/server/entities/Projeto.ts
 import {
   Entity,
   Column,
@@ -9,10 +9,14 @@ import {
 } from "typeorm";
 import { Votacao } from "./Votacao"; // Isso está criando a referência circular
 
-export type EmendaStatus = "pendente" | "em_votacao" | "aprovada" | "reprovada";
+export type ProjetoStatus =
+  | "pendente"
+  | "em_votacao"
+  | "aprovada"
+  | "reprovada";
 
-@Entity("emendas")
-export class Emenda {
+@Entity("projetos")
+export class Projeto {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -30,7 +34,7 @@ export class Emenda {
     enum: ["pendente", "em_votacao", "aprovada", "reprovada"],
     default: "pendente",
   })
-  status: EmendaStatus;
+  status: ProjetoStatus;
 
   @CreateDateColumn({ name: "data_criacao" })
   data_criacao: Date;
@@ -39,6 +43,6 @@ export class Emenda {
   data_atualizacao: Date;
 
   // Use uma função de tipo para evitar importar diretamente a classe Votacao
-  @OneToMany("Votacao", "emenda")
+  @OneToMany("Votacao", "projeto")
   votacoes: Votacao[];
 }

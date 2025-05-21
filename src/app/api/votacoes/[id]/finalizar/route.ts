@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRepository } from "@/lib/db";
 import { Votacao } from "@/server/entities/Votacao";
-import { Emenda } from "@/server/entities/Emenda";
+import { Projeto } from "@/server/entities/Projeto";
 import { verifyAuthToken, isAdmin } from "@/lib/auth";
 
 interface Params {
@@ -20,9 +20,10 @@ export async function POST(request: Request, { params }: Params) {
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
+    const { user } = authResult;
 
     // Check admin permission
-    if (!isAdmin(authResult.user)) {
+    if (!isAdmin(user)) {
       return NextResponse.json(
         {
           error:
@@ -45,7 +46,7 @@ export async function POST(request: Request, { params }: Params) {
     // Check if votacao exists and is in progress
     const votacao = await votacaoRepository.findOne({
       where: { id: votacaoId },
-      relations: ["emenda"],
+      relations: ["projeto"],
     });
 
     if (!votacao) {
@@ -77,15 +78,15 @@ export async function POST(request: Request, { params }: Params) {
 
     await votacaoRepository.save(votacao);
 
-    // Update emenda status
-    const emendaRepository = await getRepository(Emenda);
-    const emenda = await emendaRepository.findOne({
-      where: { id: votacao.emendaId },
+    // Update projeto status
+    const projetoRepository = await getRepository(Projeto);
+    const projeto = await projetoRepository.findOne({
+      where: { id: votacao.projetoId },
     });
 
-    if (emenda) {
-      emenda.status = resultado;
-      await emendaRepository.save(emenda);
+    if (projeto) {
+      projeto.status = resultado;
+      await projetoRepository.save(projeto);
     }
 
     return NextResponse.json({

@@ -1,8 +1,8 @@
 // src/lib/database.ts
-import { Emenda } from "@/server/entities/Emenda";
-import { Usuario } from "@/server/entities/Usuario";
-import { Votacao } from "@/server/entities/Votacao";
-import { Voto } from "@/server/entities/Voto";
+import { Projeto } from "../../server/entities/Projeto";
+import { Usuario } from "../../server/entities/Usuario";
+import { Votacao } from "../../server/entities/Votacao";
+import { Voto } from "../../server/entities/Voto";
 import { DataSource } from "typeorm";
 
 export const AppDataSource = new DataSource({
@@ -14,7 +14,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DATABASE_NAME || "vere_voto_db",
   synchronize: process.env.NODE_ENV !== "production", // Não use synchronize em produção
   logging: process.env.NODE_ENV !== "production",
-  entities: [Usuario, Emenda, Votacao, Voto],
+  entities: [Usuario, Projeto, Votacao, Voto],
   migrations: ["./migrations/*.ts"],
 });
 

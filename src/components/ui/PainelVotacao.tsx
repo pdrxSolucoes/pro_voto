@@ -69,7 +69,7 @@ export function PainelVotacao({
     <div className="painel-votacao">
       <div className="mb-6">
         <h2 className="text-xl font-bold mb-2">
-          Votação: {votacao.emenda.titulo}
+          Votação: {votacao.projeto.titulo}
         </h2>
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <span>Iniciada em: {votacao.data_inicio}</span>
@@ -146,7 +146,7 @@ export function PainelVotacao({
                   {vereadorAtual?.voto
                     ? vereadorAtual.voto.toLowerCase()
                     : "não votou"}{" "}
-                  esta emenda.
+                  este projeto.
                 </p>
               </div>
             </div>

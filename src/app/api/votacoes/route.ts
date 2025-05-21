@@ -1,7 +1,7 @@
 // src/app/api/votacoes/route.ts
 import { NextResponse } from "next/server";
 import { getRepository } from "@/lib/db";
-import { Emenda } from "@/server/entities/Emenda";
+import { Projeto } from "@/server/entities/Projeto";
 import { Votacao } from "@/server/entities/Votacao";
 import { verifyAuthToken } from "@/lib/auth";
 
@@ -34,31 +34,31 @@ export async function POST(request: Request) {
       );
     }
 
-    const { emendaId } = body;
+    const { projetoId } = body;
 
     // Validate input
-    if (!emendaId) {
+    if (!projetoId) {
       return NextResponse.json(
-        { error: "ID da emenda é obrigatório" },
+        { error: "ID do projeto é obrigatório" },
         { status: 400 }
       );
     }
 
-    // Check if emenda exists
-    const emendaRepository = await getRepository(Emenda);
-    const emenda = await emendaRepository.findOneBy({ id: emendaId });
+    // Check if projeto exists
+    const projetoRepository = await getRepository(Projeto);
+    const projeto = await projetoRepository.findOneBy({ id: projetoId });
 
-    if (!emenda) {
+    if (!projeto) {
       return NextResponse.json(
-        { error: "Emenda não encontrada" },
+        { error: "Projeto não encontrado" },
         { status: 404 }
       );
     }
 
-    // Check if emenda is available for voting
-    if (emenda.status !== "pendente") {
+    // Check if projeto is available for voting
+    if (projeto.status !== "pendente") {
       return NextResponse.json(
-        { error: "Apenas emendas pendentes podem iniciar votação" },
+        { error: "Apenas projetos pendentes podem iniciar votação" },
         { status: 400 }
       );
     }
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     // Create new votacao
     const votacaoRepository = await getRepository(Votacao);
     const votacao = votacaoRepository.create({
-      emendaId: emenda.id,
+      projetoId: projeto.id,
       dataInicio: new Date(),
       resultado: "em_andamento",
       votosFavor: 0,
@@ -74,9 +74,9 @@ export async function POST(request: Request) {
       abstencoes: 0,
     });
 
-    // Update emenda status
-    emenda.status = "em_votacao";
-    await emendaRepository.save(emenda);
+    // Update projeto status
+    projeto.status = "em_votacao";
+    await projetoRepository.save(projeto);
 
     // Save votacao
     await votacaoRepository.save(votacao);

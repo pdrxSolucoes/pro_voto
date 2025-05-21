@@ -9,7 +9,7 @@ import {
   OneToMany,
   JoinColumn,
 } from "typeorm";
-import { Emenda } from "./Emenda"; // Isso está criando a referência circular
+import { Projeto } from "./Projeto"; // Isso está criando a referência circular
 import { Voto } from "./Voto";
 
 export type VotacaoResultado = "aprovada" | "reprovada" | "em_andamento";
@@ -19,10 +19,10 @@ export class Votacao {
   @PrimaryGeneratedColumn()
   id: number;
 
-  // Use uma função de tipo para evitar importar diretamente a classe Emenda
-  @ManyToOne("Emenda", "votacoes")
-  @JoinColumn({ name: "emenda_id" })
-  emenda: Emenda;
+  // Use uma função de tipo para evitar importar diretamente a classe Projeto
+  @ManyToOne("Projeto", "votacoes")
+  @JoinColumn({ name: "projeto_id" })
+  projeto: Projeto;
 
   @Column({ name: "data_inicio", type: "timestamp" })
   dataInicio: Date;

@@ -12,16 +12,16 @@ import axios from "axios";
 
 interface VotacaoAtiva {
   id: number;
-  emendaTitulo: string;
+  projetoTitulo: string;
   dataInicio: string;
   votosRegistrados: number;
   totalVereadores: number;
 }
 
 interface HomeContent {
-  emendasPendentes: number;
-  emendasAprovadas: number;
-  emendasReprovadas: number;
+  projetosPendentes: number;
+  projetosAprovadas: number;
+  projetosReprovadas: number;
   votacoesAtivas: VotacaoAtiva[];
 }
 
@@ -86,32 +86,8 @@ function HomePageContent() {
         // const response = await fetch('/api/dashboard');
         // const data = await response.json();
 
-        // Dados simulados para demonstração
-        const dadosDemo: HomeContent = {
-          emendasPendentes: 8,
-          emendasAprovadas: 16,
-          emendasReprovadas: 5,
-          votacoesAtivas: [
-            {
-              id: 1,
-              emendaTitulo: "Programa de Coleta Seletiva",
-              dataInicio: "2025-04-25T14:30:00",
-              votosRegistrados: 9,
-              totalVereadores: 10,
-            },
-            {
-              id: 2,
-              emendaTitulo: "Expansão da Rede Municipal de Saúde",
-              dataInicio: "2025-04-25T15:45:00",
-              votosRegistrados: 6,
-              totalVereadores: 10,
-            },
-          ],
-        };
-
         // Simular delay de API
         setTimeout(() => {
-          setData(dadosDemo);
           setLoadingHome(false);
         }, 1000);
       } catch (err) {
@@ -133,8 +109,8 @@ function HomePageContent() {
           Câmara Municipal de Vereadores de Confresa
         </p>
         <div className="flex space-x-4">
-          <Link href="/emendas">
-            <Button variant="primary">Ver Emendas</Button>
+          <Link href="/projetos">
+            <Button variant="primary">Ver Projetos</Button>
           </Link>
           <Link href="/votacao/tempo-real">
             <Button variant="secondary">Votações Ativas</Button>
@@ -151,33 +127,33 @@ function HomePageContent() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardHeader>
-                <CardTitle>Emendas Pendentes</CardTitle>
+                <CardTitle>Projetos Pendentes</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-primary">
-                  {data.emendasPendentes}
+                  {data.projetosPendentes}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Emendas Aprovadas</CardTitle>
+                <CardTitle>Projetos Aprovadas</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-green-600">
-                  {data.emendasAprovadas}
+                  {data.projetosAprovadas}
                 </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Emendas Reprovadas</CardTitle>
+                <CardTitle>Projetos Reprovadas</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-red-600">
-                  {data.emendasReprovadas}
+                  {data.projetosReprovadas}
                 </div>
               </CardContent>
             </Card>
@@ -200,7 +176,7 @@ function HomePageContent() {
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <h3 className="text-lg font-bold">
-                        {votacao.emendaTitulo}
+                        {votacao.projetoTitulo}
                       </h3>
                       <Badge variant="default">Em Votação</Badge>
                     </div>

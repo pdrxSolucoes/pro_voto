@@ -78,8 +78,8 @@ export function RootLayout({ children }: LayoutProps) {
           <Link href="/" className="text-white hover:text-gray-200">
             Início
           </Link>
-          <a href="/emendas" className="text-white hover:text-gray-200">
-            Emendas
+          <a href="/projetos" className="text-white hover:text-gray-200">
+            Projetos
           </a>
           <a href="/votacao" className="text-white hover:text-gray-200">
             Votação

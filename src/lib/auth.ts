@@ -126,6 +126,21 @@ export async function hasAdminUser() {
     return false;
   }
 }
+// Função para verificar se existe algum usuário admin no sistema
+export async function isAdmin(user: any) {
+  try {
+    await initializeDatabase();
+    const usuarioRepository = AppDataSource.getRepository(Usuario);
+
+    const admin = await usuarioRepository.find({
+      where: { cargo: "admin", email: user.email },
+    });
+    return admin;
+  } catch (error) {
+    console.error("Erro ao verificar usuários admin:", error);
+    return false;
+  }
+}
 
 // Função modificada em src/lib/auth.ts
 export async function createFirstAdmin(

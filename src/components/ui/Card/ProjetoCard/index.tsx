@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/Button";
 
-// src/components/EmendaCard.tsx (atualização)
-interface EmendaCardProps {
+// src/components/ProjetoCard.tsx (atualização)
+interface ProjetoCardProps {
   id: number;
   titulo: string;
   descricao: string;
@@ -13,7 +13,7 @@ interface EmendaCardProps {
   isAdmin: boolean;
 }
 
-export function EmendaCard({
+export function ProjetoCard({
   id,
   titulo,
   descricao,
@@ -23,7 +23,7 @@ export function EmendaCard({
   onVerDetalhes,
   onEditar, // Nova prop
   isAdmin,
-}: EmendaCardProps) {
+}: ProjetoCardProps) {
   const statusLabels = {
     pendente: "Pendente",
     em_votacao: "Em Votação",

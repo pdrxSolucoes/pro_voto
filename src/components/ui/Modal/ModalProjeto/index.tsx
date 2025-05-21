@@ -1,8 +1,8 @@
-// src/components/ui/Modal/ModalEmenda.tsx
+// src/components/ui/Modal/ModalProjeto.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 
-interface Emenda {
+interface Projeto {
   id: number;
   titulo: string;
   descricao: string;
@@ -10,39 +10,36 @@ interface Emenda {
   status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
 }
 
-interface EmendaFormModalProps {
+interface ProjetoFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  emenda?: Emenda;
+  projeto?: Projeto;
   onSave: (data: { titulo: string; descricao: string }) => Promise<void>;
 }
 
-export function EmendaFormModal({
+export function ProjetoFormModal({
   isOpen,
   onClose,
-  emenda,
+  projeto,
   onSave,
-}: EmendaFormModalProps) {
+}: ProjetoFormModalProps) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isEditMode = !!emenda;
+  const isEditMode = !!projeto;
 
-  // Carregar dados da emenda quando estiver em modo de edição
   useEffect(() => {
-    if (emenda) {
-      setTitulo(emenda.titulo);
-      setDescricao(emenda.descricao);
+    if (projeto) {
+      setTitulo(projeto.titulo);
+      setDescricao(projeto.descricao);
     } else {
-      // Limpar formulário quando for nova emenda
       setTitulo("");
       setDescricao("");
     }
-    // Limpar erro ao abrir/fechar modal
     setError(null);
-  }, [emenda, isOpen]);
+  }, [projeto, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,21 +47,18 @@ export function EmendaFormModal({
     setIsSaving(true);
 
     try {
-      // Estruturar dados corretamente
       const data = {
         titulo,
         descricao,
       };
 
-      console.log("Enviando dados do modal:", data);
       await onSave(data);
       onClose();
     } catch (err) {
-      console.error("Erro ao salvar emenda:", err);
       setError(
         err instanceof Error
           ? err.message
-          : "Ocorreu um erro ao salvar a emenda"
+          : "Ocorreu um erro ao salvar o projeto"
       );
     } finally {
       setIsSaving(false);
@@ -78,7 +72,7 @@ export function EmendaFormModal({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
         <div className="p-6">
           <h2 className="text-xl font-bold mb-4">
-            {isEditMode ? "Editar Emenda" : "Nova Emenda"}
+            {isEditMode ? "Editar Projeto" : "Novo Projeto"}
           </h2>
 
           {error && (

@@ -36,7 +36,7 @@ function VotacaoRealTimeContent() {
   useEffect(() => {
     if (ultimoVoto) {
       addNotification(
-        `${ultimoVoto.vereador} ${ultimoVoto.voto} a emenda.`,
+        `${ultimoVoto.vereador} ${ultimoVoto.voto} o projeto.`,
         "info"
       );
     }
@@ -80,7 +80,7 @@ function VotacaoRealTimeContent() {
   // Simular dados para demonstração se não houver resultado
   const resultadoDemo = resultado || {
     id: 1,
-    emenda: {
+    projeto: {
       id: 2,
       titulo: "Programa de Coleta Seletiva",
       descricao: "Programa de Coleta Seletiva das mulheres",

@@ -6,7 +6,7 @@ const cardVariants = cva("rounded-lg shadow-sm", {
   variants: {
     variant: {
       default: "bg-card text-card-foreground",
-      emenda: "bg-white border-t-4 border-t-confresa-azul",
+      projeto: "bg-white border-t-4 border-t-confresa-azul",
       votacao: "bg-white border-l-4 border-l-confresa-azul",
       resultado: "bg-white border-l-4 border-l-confresa-vermelho",
       aprovada: "bg-white border-l-4 border-l-green-500",

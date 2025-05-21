@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRepository } from "@/lib/db";
-import { Emenda } from "@/server/entities/Emenda";
+import { Projeto } from "@/server/entities/Projeto";
 import { verifyAuthToken } from "@/lib/auth";
 
 interface Params {
@@ -9,83 +9,70 @@ interface Params {
   };
 }
 
-// GET single emenda by id
+// GET projeto by id
 export async function GET(request: Request, { params }: Params) {
   try {
     const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    // Verify auth token
     const authResult = await verifyAuthToken(token);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
 
     const id = parseInt(params.id);
-
-    // Validate id
     if (isNaN(id)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    // Get emenda by id
-    const emendaRepository = await getRepository(Emenda);
-
-    const emenda = await emendaRepository.findOne({
+    const projetoRepository = await getRepository(Projeto);
+    const projeto = await projetoRepository.findOne({
       where: { id },
       relations: ["votacoes", "votacoes.votos"],
     });
 
-    if (!emenda) {
+    if (!projeto) {
       return NextResponse.json(
-        { error: "Emenda não encontrada" },
+        { error: "Projeto não encontrado" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(emenda);
+    return NextResponse.json(projeto);
   } catch (error) {
-    console.error("Error fetching emenda:", error);
+    console.error("Error fetching projeto:", error);
     return NextResponse.json(
-      { error: "Erro ao buscar emenda" },
+      { error: "Erro ao buscar projeto" },
       { status: 500 }
     );
   }
 }
 
-// PUT update emenda by id
+// PUT update projeto
 export async function PUT(request: Request, { params }: Params) {
   try {
     const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    // Verify auth token
     const authResult = await verifyAuthToken(token);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
 
-    // Check admin permission
     if (authResult.user?.cargo !== "admin") {
       return NextResponse.json(
         {
           error:
-            "Permissão negada. Apenas administradores podem atualizar emendas.",
+            "Permissão negada. Apenas administradores podem atualizar projetos.",
         },
         { status: 403 }
       );
     }
 
     const id = parseInt(params.id);
-
-    // Validate id
     if (isNaN(id)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    // Parse request body
     const body = await request.json();
     const { titulo, descricao, status } = body;
 
-    // Validate input
     if (!titulo && !descricao && !status) {
       return NextResponse.json(
         { error: "Pelo menos um campo deve ser fornecido para atualização" },
@@ -93,92 +80,76 @@ export async function PUT(request: Request, { params }: Params) {
       );
     }
 
-    // Get emenda repository
-    const emendaRepository = await getRepository(Emenda);
+    const projetoRepository = await getRepository(Projeto);
+    const projeto = await projetoRepository.findOne({ where: { id } });
 
-    // Find emenda by id
-    const emenda = await emendaRepository.findOne({ where: { id } });
-
-    if (!emenda) {
+    if (!projeto) {
       return NextResponse.json(
-        { error: "Emenda não encontrada" },
+        { error: "Projeto não encontrado" },
         { status: 404 }
       );
     }
 
-    // Update fields
-    if (titulo) emenda.titulo = titulo;
-    if (descricao) emenda.descricao = descricao;
+    if (titulo) projeto.titulo = titulo;
+    if (descricao) projeto.descricao = descricao;
     if (
       status &&
       ["pendente", "em_votacao", "aprovada", "reprovada"].includes(status)
     ) {
-      emenda.status = status as any;
+      projeto.status = status as any;
     }
 
-    // Save updated emenda
-    await emendaRepository.save(emenda);
-
-    return NextResponse.json(emenda);
+    await projetoRepository.save(projeto);
+    return NextResponse.json(projeto);
   } catch (error) {
-    console.error("Error updating emenda:", error);
+    console.error("Error updating projeto:", error);
     return NextResponse.json(
-      { error: "Erro ao atualizar emenda" },
+      { error: "Erro ao atualizar projeto" },
       { status: 500 }
     );
   }
 }
 
-// DELETE emenda by id
+// DELETE projeto
 export async function DELETE(request: Request, { params }: Params) {
   try {
     const token = request.headers.get("Authorization")?.split(" ")[1];
-
-    // Verify auth token
     const authResult = await verifyAuthToken(token);
     if (!authResult.success) {
       return NextResponse.json({ error: authResult.message }, { status: 401 });
     }
 
-    // Check admin permission
     if (authResult.user?.cargo !== "admin") {
       return NextResponse.json(
         {
           error:
-            "Permissão negada. Apenas administradores podem excluir emendas.",
+            "Permissão negada. Apenas administradores podem excluir projetos.",
         },
         { status: 403 }
       );
     }
 
     const id = parseInt(params.id);
-
-    // Validate id
     if (isNaN(id)) {
       return NextResponse.json({ error: "ID inválido" }, { status: 400 });
     }
 
-    // Get emenda repository
-    const emendaRepository = await getRepository(Emenda);
+    const projetoRepository = await getRepository(Projeto);
+    const projeto = await projetoRepository.findOne({ where: { id } });
 
-    // Find emenda by id
-    const emenda = await emendaRepository.findOne({ where: { id } });
-
-    if (!emenda) {
+    if (!projeto) {
       return NextResponse.json(
-        { error: "Emenda não encontrada" },
+        { error: "Projeto não encontrado" },
         { status: 404 }
       );
     }
 
-    // Delete emenda
-    await emendaRepository.remove(emenda);
-
-    return NextResponse.json({ message: "Emenda excluída com sucesso" });
+    await projetoRepository.remove(projeto);
+    return NextResponse.json({ message: "Projeto excluído com sucesso" });
   } catch (error) {
-    console.error("Error deleting emenda:", error);
+    console.error("Error deleting projeto:", error);
     return NextResponse.json(
-      { error: "Erro ao excluir emenda" },
+      { error: "Erro ao excluir projeto" },
       { status: 500 }
     );
   }
