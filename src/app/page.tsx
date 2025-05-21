@@ -81,7 +81,8 @@ function HomePageContent() {
     async function carregarDados() {
       try {
         setLoadingHome(true);
-
+        const responseProjetos = await axios.get("/api/projetos");
+        console.log("projetos", responseProjetos);
         // Em um ambiente real, esta seria uma chamada de API
         // const response = await fetch('/api/dashboard');
         // const data = await response.json();
