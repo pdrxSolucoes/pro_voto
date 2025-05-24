@@ -20,7 +20,7 @@ export class Votacao {
   id: number;
 
   // Use uma função de tipo para evitar importar diretamente a classe Projeto
-  @ManyToOne("Projeto", "votacoes")
+  @ManyToOne("projetos", "votacoes")
   @JoinColumn({ name: "projeto_id" })
   projeto: Projeto;
 

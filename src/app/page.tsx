@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { dashboardService } from "@/services/dashboardService";
 
 interface VotacaoAtiva {
   id: number;
@@ -26,7 +27,7 @@ interface HomeContent {
 }
 
 function HomePageContent() {
-  const [data, setData] = useState<HomeContent | null>(null);
+  const [data, setData] = useState<HomeContent | null>(null); // Objeto único ✅
   const [loadingHome, setLoadingHome] = useState(true);
 
   const { isAuthenticated, loading: authLoading } = useAuth();
@@ -78,27 +79,20 @@ function HomePageContent() {
 
   // Carregar dados iniciais
   useEffect(() => {
-    async function carregarDados() {
-      try {
-        setLoadingHome(true);
-        const responseProjetos = await axios.get("/api/projetos");
-        console.log("projetos", responseProjetos);
-        // Em um ambiente real, esta seria uma chamada de API
-        // const response = await fetch('/api/dashboard');
-        // const data = await response.json();
-
-        // Simular delay de API
-        setTimeout(() => {
-          setLoadingHome(false);
-        }, 1000);
-      } catch (err) {
-        console.error("Erro ao carregar dados:", err);
-        setLoadingHome(false);
-      }
-    }
-
     carregarDados();
   }, []);
+
+  async function carregarDados() {
+    try {
+      setLoadingHome(true);
+      const homeData = await dashboardService.getDashboardData();
+      setData(homeData);
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+    } finally {
+      setLoadingHome(false);
+    }
+  }
 
   return (
     <div>

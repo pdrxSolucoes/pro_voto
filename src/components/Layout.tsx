@@ -84,9 +84,6 @@ export function RootLayout({ children }: LayoutProps) {
           <a href="/votacao" className="text-white hover:text-gray-200">
             Votação
           </a>
-          <a href="/resultados" className="text-white hover:text-gray-200">
-            Resultados
-          </a>
         </nav>
       </Header>
 
