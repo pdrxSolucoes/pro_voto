@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="200px" viewBox="0 0 200 200" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <title>Brasão de Confresa</title>
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g transform="translate(10, 10)">
+            <!-- Escudo -->
+            <path d="M90,0 C120,0 160,20 160,60 C160,120 90,180 90,180 C90,180 20,120 20,60 C20,20 60,0 90,0 Z" fill="#1a56a6" stroke="#000000" stroke-width="2"/>
+            
+            <!-- Faixa diagonal -->
+            <path d="M30,40 L150,140" stroke="#ffffff" stroke-width="12"/>
+            <path d="M30,40 L150,140" stroke="#e63946" stroke-width="8"/>
+            
+            <!-- Estrela central -->
+            <polygon points="90,70 100,90 120,95 105,110 110,130 90,120 70,130 75,110 60,95 80,90" fill="#ffffff"/>
+            
+            <!-- Texto circular (simulado) -->
+            <circle cx="90" cy="90" r="75" stroke="#ffffff" stroke-width="2" stroke-dasharray="3,3" fill="none"/>
+            
+            <!-- Ramos de café (simplificados) -->
+            <path d="M40,140 C50,130 60,135 65,140 C70,145 75,150 85,145" stroke="#2e7d32" stroke-width="2"/>
+            <path d="M140,140 C130,130 120,135 115,140 C110,145 105,150 95,145" stroke="#2e7d32" stroke-width="2"/>
+            
+            <!-- Folhas estilizadas -->
+            <ellipse cx="50" cy="135" rx="5" ry="10" transform="rotate(-30 50 135)" fill="#2e7d32"/>
+            <ellipse cx="65" cy="142" rx="5" ry="10" transform="rotate(-15 65 142)" fill="#2e7d32"/>
+            <ellipse cx="130" cy="135" rx="5" ry="10" transform="rotate(30 130 135)" fill="#2e7d32"/>
+            <ellipse cx="115" cy="142" rx="5" ry="10" transform="rotate(15 115 142)" fill="#2e7d32"/>
+        </g>
+    </g>
+</svg>
