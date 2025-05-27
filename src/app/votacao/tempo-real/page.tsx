@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/Notification";
 import { VotacaoAtiva } from "@/types/models";
 import { api } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
@@ -27,12 +28,8 @@ function VotacaoRealTimeContent() {
   >([]);
   const [carregandoLista, setCarregandoLista] = useState(true);
 
-  // Usuário simulado (na implementação real, viria da autenticação)
-  const usuario = {
-    id: 10,
-    nome: "Vereador Teste",
-    cargo: "vereador",
-  };
+  // Obter o usuário autenticado do contexto de autenticação
+  const { user } = useAuth();
 
   const { addNotification } = useNotifications();
 
@@ -117,7 +114,7 @@ function VotacaoRealTimeContent() {
         `🗳️ Iniciando processo de voto: ${voto} para votação ${votacaoAtiva}`
       );
 
-      const sucesso = await registrarVoto(votacaoAtiva, usuario.id, voto);
+      const sucesso = await registrarVoto(votacaoAtiva, user?.id, voto);
 
       if (sucesso) {
         console.log("✅ Voto registrado com sucesso!");
@@ -218,7 +215,7 @@ function VotacaoRealTimeContent() {
               <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 border-b">
                 <PainelVotacao
                   votacao={resultado}
-                  vereadorId={usuario.id}
+                  vereadorId={user?.id}
                   onVotar={handleVotar}
                 />
               </div>

@@ -27,8 +27,9 @@ export function PainelVotacao({
   // Verifica se o vereador já votou
   const vereadorAtual = vereadorId
     ? votacao.vereadores.find((v: any) => v.id === vereadorId)
-    : undefined;
-  const jaVotou = vereadorAtual?.voto !== null;
+    : null;
+
+  const jaVotou = vereadorAtual && vereadorAtual?.voto !== null;
 
   // Recalcula a porcentagem de votos
   const totalVotos =

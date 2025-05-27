@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { api } from "@/lib/api";
 
 export interface Vereador {
   id: number;
@@ -150,8 +151,7 @@ export function useRegistrarVoto() {
 
     try {
       console.log(`🗳️ Registrando voto:`, { votacaoId, vereadorId, voto });
-
-      const response = await axios.post(`/api/votacoes/${votacaoId}/votar`, {
+      const response = await api.post(`votacoes/${votacaoId}/votar`, {
         vereadorId,
         voto,
       });

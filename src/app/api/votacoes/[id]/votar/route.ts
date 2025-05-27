@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRepository } from "typeorm";
 import { Votacao } from "@/server/entities/Votacao";
 import { Voto } from "@/server/entities/Voto";
 import { Usuario } from "@/server/entities/Usuario";
 import { Projeto } from "@/server/entities/Projeto";
+import { AppDataSource } from "@/lib/db/datasource";
 
 export async function POST(
   request: NextRequest,
@@ -21,8 +21,18 @@ export async function POST(
 
     console.log(`🗳️ Tentando registrar voto na votação ID: ${votacaoId}`);
 
+    // Garantir que a conexão com o banco está ativa
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    // Usar os repositórios da nova API do TypeORM
+    const votacaoRepository = AppDataSource.getRepository(Votacao);
+    const votoRepository = AppDataSource.getRepository(Voto);
+    const usuarioRepository = AppDataSource.getRepository(Usuario);
+    const projetoRepository = AppDataSource.getRepository(Projeto);
+
     // Verificar se a votação existe e está em andamento
-    const votacaoRepository = getRepository(Votacao);
     const votacao = await votacaoRepository.findOne({
       where: { id: votacaoId, resultado: "em_andamento" },
       relations: ["projeto"],
@@ -38,7 +48,10 @@ export async function POST(
 
     // Obter dados do corpo da requisição
     const body = await request.json();
-    const { vereador_id, voto } = body;
+
+    // Extrair dados, suportando tanto vereador_id quanto vereadorId
+    const vereador_id = body.vereador_id || body.vereadorId;
+    const voto = body.voto;
 
     console.log(`📝 Dados recebidos:`, {
       vereador_id,
@@ -57,12 +70,14 @@ export async function POST(
     }
 
     // Verificar se o vereador existe
-    const usuarioRepository = getRepository(Usuario);
-    const vereador = await usuarioRepository.findOne({
-      where: { id: vereador_id, cargo: "vereador", ativo: true },
+    const usuario = await usuarioRepository.findOne({
+      where: [
+        { id: vereador_id, cargo: "vereador", ativo: true },
+        { id: vereador_id, cargo: "admin", ativo: true },
+      ],
     });
-
-    if (!vereador) {
+    console.log("úsuario", usuario);
+    if (!usuario) {
       console.log(`❌ Vereador ${vereador_id} não encontrado ou inativo`);
       return NextResponse.json(
         { error: "Vereador não encontrado" },
@@ -71,11 +86,10 @@ export async function POST(
     }
 
     // Verificar se o vereador já votou nesta votação
-    const votoRepository = getRepository(Voto);
     const votoExistente = await votoRepository.findOne({
       where: {
-        votacaoId: votacaoId,
-        vereadorId: vereador_id,
+        votacao: { id: votacaoId }, // Usando relacionamento
+        vereador: { id: vereador_id }, // Usando relacionamento
       },
     });
 
@@ -89,123 +103,143 @@ export async function POST(
       );
     }
 
-    // Registrar o voto
-    const novoVoto = votoRepository.create({
-      votacaoId: votacaoId,
-      vereadorId: vereador_id,
-      voto: voto,
-    });
+    // Usar QueryRunner para transação
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    await votoRepository.save(novoVoto);
-    console.log(`✅ Voto registrado com sucesso:`, { id: novoVoto.id, voto });
-
-    // Buscar contagem atualizada de votos
-    const totalVotos = await votoRepository.count({
-      where: { votacaoId: votacaoId },
-    });
-
-    // Buscar total de vereadores ativos
-    const totalVereadores = await usuarioRepository.count({
-      where: { cargo: "vereador", ativo: true },
-    });
-
-    console.log(
-      `📊 Progresso da votação: ${totalVotos}/${totalVereadores} votos`
-    );
-
-    // Se todos votaram, finalizar automaticamente a votação
-    if (totalVotos >= totalVereadores) {
-      console.log(`🏁 Finalizando votação automaticamente - todos votaram`);
-
-      // Buscar todos os votos para contagem
-      const todosVotos = await votoRepository.find({
-        where: { votacaoId: votacaoId },
+    try {
+      // Registrar o voto
+      const novoVoto = queryRunner.manager.create(Voto, {
+        votacao: votacao,
+        vereador: usuario,
+        voto: voto,
+        dataVoto: new Date(),
       });
 
-      // Contar votos por categoria
-      const votosFavor = todosVotos.filter((v) => v.voto === "aprovar").length;
-      const votosContra = todosVotos.filter(
-        (v) => v.voto === "desaprovar"
-      ).length;
-      const abstencoes = todosVotos.filter((v) => v.voto === "abster").length;
+      await queryRunner.manager.save(novoVoto);
+      console.log(`✅ Voto registrado com sucesso:`, { id: novoVoto.id, voto });
 
-      // Determinar resultado
-      const resultado = votosFavor > votosContra ? "aprovada" : "reprovada";
-
-      console.log(`📈 Resultado da votação:`, {
-        favor: votosFavor,
-        contra: votosContra,
-        abstencoes: abstencoes,
-        resultado: resultado,
+      // Buscar contagem atualizada de votos
+      const totalVotos = await queryRunner.manager.count(Voto, {
+        where: { votacao: { id: votacaoId } },
       });
 
-      // Atualizar votação
-      await votacaoRepository.update(votacaoId, {
-        resultado: resultado,
-        dataFim: new Date(),
-        votosFavor: votosFavor,
-        votosContra: votosContra,
-        abstencoes: abstencoes,
+      // Buscar total de vereadores ativos
+      const totalVereadores = await queryRunner.manager.count(Usuario, {
+        where: { cargo: "vereador", ativo: true },
       });
 
-      // Atualizar status do projeto se existir
-      if (votacao.projeto) {
-        const projetoRepository = getRepository(Projeto);
-        await projetoRepository.update(votacao.projeto.id, {
-          status: resultado,
+      console.log(
+        `📊 Progresso da votação: ${totalVotos}/${totalVereadores} votos`
+      );
+
+      // Se todos votaram, finalizar automaticamente a votação
+      if (totalVotos >= totalVereadores) {
+        console.log(`🏁 Finalizando votação automaticamente - todos votaram`);
+
+        // Buscar todos os votos para contagem
+        const todosVotos = await queryRunner.manager.find(Voto, {
+          where: { votacao: { id: votacaoId } },
         });
-        console.log(`📋 Status do projeto atualizado para: ${resultado}`);
-      }
 
-      return NextResponse.json({
-        success: true,
-        votacao_finalizada: true,
-        resultado: resultado,
-        contagem: {
+        // Contar votos por categoria
+        const votosFavor = todosVotos.filter(
+          (v: any) => v.voto === "aprovar"
+        ).length;
+        const votosContra = todosVotos.filter(
+          (v: any) => v.voto === "desaprovar"
+        ).length;
+        const abstencoes = todosVotos.filter(
+          (v: any) => v.voto === "abster"
+        ).length;
+
+        // Determinar resultado
+        const resultado = votosFavor > votosContra ? "aprovada" : "reprovada";
+
+        console.log(`📈 Resultado da votação:`, {
           favor: votosFavor,
           contra: votosContra,
           abstencoes: abstencoes,
-          total: totalVotos,
-        },
-      });
-    } else {
-      // Atualizar contadores parciais na votação
-      const votosParciais = await votoRepository.find({
-        where: { votacaoId: votacaoId },
-      });
+          resultado: resultado,
+        });
 
-      const votosFavorParcial = votosParciais.filter(
-        (v) => v.voto === "aprovar"
-      ).length;
-      const votosContraParcial = votosParciais.filter(
-        (v) => v.voto === "desaprovar"
-      ).length;
-      const abstencoesParcial = votosParciais.filter(
-        (v) => v.voto === "abster"
-      ).length;
+        // Atualizar votação
+        await queryRunner.manager.update(Votacao, votacaoId, {
+          resultado: resultado,
+          dataFim: new Date(),
+          votosFavor: votosFavor,
+          votosContra: votosContra,
+          abstencoes: abstencoes,
+        });
 
-      await votacaoRepository.update(votacaoId, {
-        votosFavor: votosFavorParcial,
-        votosContra: votosContraParcial,
-        abstencoes: abstencoesParcial,
-      });
+        // Atualizar status do projeto se existir
+        if (votacao.projeto) {
+          await queryRunner.manager.update(Projeto, votacao.projeto.id, {
+            status: resultado,
+          });
+          console.log(`📋 Status do projeto atualizado para: ${resultado}`);
+        }
 
-      console.log(`📊 Contadores atualizados:`, {
-        favor: votosFavorParcial,
-        contra: votosContraParcial,
-        abstencoes: abstencoesParcial,
-      });
+        await queryRunner.commitTransaction();
+
+        return NextResponse.json({
+          success: true,
+          votacao_finalizada: true,
+          resultado: resultado,
+          contagem: {
+            favor: votosFavor,
+            contra: votosContra,
+            abstencoes: abstencoes,
+            total: totalVotos,
+          },
+        });
+      } else {
+        // Atualizar contadores parciais na votação
+        const votosParciais = await queryRunner.manager.find(Voto, {
+          where: { votacao: { id: votacaoId } },
+        });
+
+        const votosFavorParcial = votosParciais.filter(
+          (v: any) => v.voto === "aprovar"
+        ).length;
+        const votosContraParcial = votosParciais.filter(
+          (v: any) => v.voto === "desaprovar"
+        ).length;
+        const abstencoesParcial = votosParciais.filter(
+          (v: any) => v.voto === "abster"
+        ).length;
+
+        await queryRunner.manager.update(Votacao, votacaoId, {
+          votosFavor: votosFavorParcial,
+          votosContra: votosContraParcial,
+          abstencoes: abstencoesParcial,
+        });
+
+        console.log(`📊 Contadores atualizados:`, {
+          favor: votosFavorParcial,
+          contra: votosContraParcial,
+          abstencoes: abstencoesParcial,
+        });
+
+        await queryRunner.commitTransaction();
+
+        return NextResponse.json({
+          success: true,
+          votacao_finalizada: false,
+          progresso: {
+            votos_registrados: totalVotos,
+            total_vereadores: totalVereadores,
+            restam: totalVereadores - totalVotos,
+          },
+        });
+      }
+    } catch (transactionError) {
+      await queryRunner.rollbackTransaction();
+      throw transactionError;
+    } finally {
+      await queryRunner.release();
     }
-
-    return NextResponse.json({
-      success: true,
-      votacao_finalizada: false,
-      progresso: {
-        votos_registrados: totalVotos,
-        total_vereadores: totalVereadores,
-        restam: totalVereadores - totalVotos,
-      },
-    });
   } catch (error) {
     console.error("❌ Erro ao registrar voto:", error);
 
@@ -217,7 +251,12 @@ export async function POST(
     }
 
     // Verificar se é erro de constraint única (vereador já votou)
-    if (error instanceof Error && error.message.includes("unique constraint")) {
+    if (
+      error instanceof Error &&
+      (error.message.includes("unique constraint") ||
+        error.message.includes("duplicate key") ||
+        error.message.includes("UNIQUE constraint failed"))
+    ) {
       return NextResponse.json(
         { error: "Vereador já votou nesta votação" },
         { status: 409 }
@@ -225,7 +264,12 @@ export async function POST(
     }
 
     // Verificar se é erro de conexão
-    if (error instanceof Error && error.message.includes("connection")) {
+    if (
+      error instanceof Error &&
+      (error.message.includes("connection") ||
+        error.message.includes("ECONNREFUSED") ||
+        error.message.includes("database"))
+    ) {
       return NextResponse.json(
         {
           success: false,
@@ -234,6 +278,21 @@ export async function POST(
             process.env.NODE_ENV === "development"
               ? error.message
               : "Erro de conexão",
+        },
+        { status: 503 }
+      );
+    }
+
+    // Verificar se é erro de inicialização do TypeORM
+    if (error instanceof Error && error.message.includes("DataSource")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Erro de inicialização do banco de dados",
+          details:
+            process.env.NODE_ENV === "development"
+              ? error.message
+              : "Erro de configuração",
         },
         { status: 503 }
       );
