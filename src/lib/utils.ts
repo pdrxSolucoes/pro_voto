@@ -1,17 +1,21 @@
-import { clsx, type ClassValue } from "clsx";
+import { ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-// Merge Tailwind classes
-export function cn(...inputs: ClassValue[]): string {
+export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Format date to local string
-export function formatDate(date: Date | string): string {
-  if (!date) return "";
-
-  const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("pt-BR", {
+/**
+ * Formata uma data ISO para exibição no formato brasileiro
+ * @param isoDate Data em formato ISO ou objeto Date
+ * @returns String formatada (DD/MM/YYYY HH:MM)
+ */
+export function formatarData(isoDate: string | Date): string {
+  if (!isoDate) return "";
+  
+  const data = typeof isoDate === "string" ? new Date(isoDate) : isoDate;
+  
+  return data.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -20,75 +24,43 @@ export function formatDate(date: Date | string): string {
   });
 }
 
-// Format status to display text
-export function formatStatus(status: string): string {
-  switch (status) {
-    case "pendente":
-      return "Pendente";
-    case "em_votacao":
-      return "Em Votação";
-    case "aprovada":
-      return "Aprovada";
-    case "reprovada":
-      return "Reprovada";
-    case "em_andamento":
-      return "Em Andamento";
-    default:
-      return status;
-  }
+/**
+ * Formata um valor monetário para exibição
+ * @param valor Valor numérico
+ * @returns String formatada (R$ 0,00)
+ */
+export function formatarMoeda(valor: number): string {
+  return valor.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
-// Get status color
-export function getStatusColor(status: string): string {
-  switch (status) {
-    case "pendente":
-      return "bg-yellow-100 text-yellow-800";
-    case "em_votacao":
-    case "em_andamento":
-      return "bg-blue-100 text-blue-800";
-    case "aprovada":
-      return "bg-green-100 text-green-800";
-    case "reprovada":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
+/**
+ * Trunca um texto longo e adiciona reticências
+ * @param texto Texto a ser truncado
+ * @param tamanhoMaximo Tamanho máximo do texto
+ * @returns Texto truncado
+ */
+export function truncarTexto(texto: string, tamanhoMaximo: number): string {
+  if (!texto) return "";
+  if (texto.length <= tamanhoMaximo) return texto;
+  
+  return texto.substring(0, tamanhoMaximo) + "...";
 }
 
-// Format vote to display text
-export function formatVoto(voto: string | null): string {
-  if (!voto) return "-";
-
-  switch (voto) {
-    case "aprovar":
-      return "Aprovado";
-    case "desaprovar":
-      return "Reprovado";
-    case "abster":
-      return "Abstenção";
-    default:
-      return voto;
-  }
-}
-
-// Get vote color
-export function getVotoColor(voto: string | null): string {
-  if (!voto) return "bg-gray-100 text-gray-800";
-
-  switch (voto) {
-    case "aprovar":
-      return "bg-green-100 text-green-800";
-    case "desaprovar":
-      return "bg-red-100 text-red-800";
-    case "abster":
-      return "bg-gray-100 text-gray-800";
-    default:
-      return "bg-gray-100 text-gray-800";
-  }
-}
-
-// Calculate progress percentage
-export function calculateProgress(atual: number, total: number): number {
-  if (total === 0) return 0;
-  return Math.round((atual / total) * 100);
+/**
+ * Gera um slug a partir de um texto
+ * @param texto Texto para gerar o slug
+ * @returns Slug gerado
+ */
+export function gerarSlug(texto: string): string {
+  if (!texto) return "";
+  
+  return texto
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/g, "")
+    .replace(/\s+/g, "-");
 }

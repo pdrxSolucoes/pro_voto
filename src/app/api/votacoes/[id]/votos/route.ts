@@ -1,112 +1,147 @@
-// src/app/api/votos/route.ts
-import { NextResponse } from "next/server";
-import { getRepository } from "@/lib/db";
-import { Votacao } from "@/server/entities/Votacao";
-import { Voto } from "@/server/entities/Voto";
-import { verifyAuthToken } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/lib/db/database";
 
-export async function POST(request: Request) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const token = request.headers.get("Authorization")?.split(" ")[1];
+    const votacaoId = parseInt(params.id);
 
-    // Verify auth token
-    const authResult = await verifyAuthToken(token);
-    if (!authResult.success) {
-      return NextResponse.json({ error: authResult.message }, { status: 401 });
-    }
-
-    // Check vereador permission
-    if (authResult.user?.cargo !== "vereador") {
+    if (isNaN(votacaoId)) {
       return NextResponse.json(
-        { error: "Apenas vereadores podem votar" },
-        { status: 403 }
-      );
-    }
-
-    // Parse request body
-    let body;
-    try {
-      body = await request.json();
-    } catch (error) {
-      return NextResponse.json(
-        { error: "Formato de requisição inválido" },
+        { error: "ID de votação inválido" },
         { status: 400 }
       );
     }
 
-    const { votacaoId, voto } = body;
+    // Verificar se a votação existe e está em andamento
+    const votacoes = await db.query(
+      `SELECT * FROM votacoes WHERE id = $1 AND resultado = 'em_andamento'`,
+      [votacaoId]
+    );
 
-    // Validate input
-    if (!votacaoId || !voto) {
+    if (!votacoes || votacoes.length === 0) {
       return NextResponse.json(
-        { error: "ID da votação e voto são obrigatórios" },
-        { status: 400 }
-      );
-    }
-
-    // Validate vote value
-    if (!["aprovar", "desaprovar", "abster"].includes(voto)) {
-      return NextResponse.json(
-        { error: "Voto deve ser 'aprovar', 'desaprovar' ou 'abster'" },
-        { status: 400 }
-      );
-    }
-
-    // Check if votacao exists and is open
-    const votacaoRepository = await getRepository(Votacao);
-    const votacao = await votacaoRepository.findOneBy({ id: votacaoId });
-
-    if (!votacao) {
-      return NextResponse.json(
-        { error: "Votação não encontrada" },
+        { error: "Votação não encontrada ou já finalizada" },
         { status: 404 }
       );
     }
 
-    if (votacao.resultado !== "em_andamento") {
+    // Obter dados do corpo da requisição
+    const body = await request.json();
+    const { vereador_id, voto } = body;
+
+    // Validar dados
+    if (!vereador_id || !voto) {
       return NextResponse.json(
-        { error: "Esta votação já foi encerrada" },
+        { error: "Dados incompletos" },
         { status: 400 }
       );
     }
 
-    // Check if vereador already voted
-    const votoRepository = await getRepository(Voto);
-    const existingVoto = await votoRepository.findOneBy({
-      votacaoId,
-      vereadorId: authResult.user.id,
-    });
-
-    if (existingVoto) {
+    // Verificar se o voto é válido
+    if (!["aprovar", "desaprovar", "abster"].includes(voto)) {
       return NextResponse.json(
-        { error: "Você já votou nesta votação" },
+        { error: "Voto inválido" },
         { status: 400 }
       );
     }
 
-    // Create new voto
-    const novoVoto = votoRepository.create({
-      votacaoId,
-      vereadorId: authResult.user.id,
-      voto,
-    });
+    // Verificar se o vereador existe
+    const vereadores = await db.query(
+      `SELECT * FROM usuarios WHERE id = $1 AND cargo = 'vereador'`,
+      [vereador_id]
+    );
 
-    // Update votacao counters
-    if (voto === "aprovar") {
-      votacao.votosFavor += 1;
-    } else if (voto === "desaprovar") {
-      votacao.votosContra += 1;
-    } else {
-      votacao.abstencoes += 1;
+    if (!vereadores || vereadores.length === 0) {
+      return NextResponse.json(
+        { error: "Vereador não encontrado" },
+        { status: 404 }
+      );
     }
 
-    // Save voto and update votacao
-    await votoRepository.save(novoVoto);
-    await votacaoRepository.save(votacao);
+    // Verificar se o vereador já votou nesta votação
+    const votosExistentes = await db.query(
+      `SELECT * FROM votos WHERE votacao_id = $1 AND vereador_id = $2`,
+      [votacaoId, vereador_id]
+    );
 
-    return NextResponse.json(novoVoto, { status: 201 });
+    if (votosExistentes && votosExistentes.length > 0) {
+      return NextResponse.json(
+        { error: "Vereador já votou nesta votação" },
+        { status: 409 }
+      );
+    }
+
+    // Registrar o voto
+    await db.query(
+      `
+      INSERT INTO votos (votacao_id, vereador_id, voto, data_registro)
+      VALUES ($1, $2, $3, NOW())
+    `,
+      [votacaoId, vereador_id, voto]
+    );
+
+    // Verificar se todos os vereadores já votaram
+    const totalVereadoresResult = await db.query(
+      `SELECT COUNT(*) as total_vereadores FROM usuarios WHERE cargo = 'vereador'`
+    );
+    
+    const totalVotosResult = await db.query(
+      `SELECT COUNT(*) as total_votos FROM votos WHERE votacao_id = $1`,
+      [votacaoId]
+    );
+
+    const total_vereadores = parseInt(totalVereadoresResult[0]?.total_vereadores) || 0;
+    const total_votos = parseInt(totalVotosResult[0]?.total_votos) || 0;
+
+    // Se todos votaram, finalizar automaticamente a votação
+    if (total_votos >= total_vereadores) {
+      // Contar votos
+      const contagemResult = await db.query(
+        `
+        SELECT 
+          COUNT(CASE WHEN voto = 'aprovar' THEN 1 END) as votos_favor,
+          COUNT(CASE WHEN voto = 'desaprovar' THEN 1 END) as votos_contra
+        FROM 
+          votos
+        WHERE 
+          votacao_id = $1
+      `,
+        [votacaoId]
+      );
+
+      const contagem = contagemResult[0];
+
+      // Determinar resultado
+      const resultado =
+        parseInt(contagem.votos_favor) > parseInt(contagem.votos_contra) ? "aprovada" : "reprovada";
+
+      // Atualizar votação
+      await db.query(
+        `
+        UPDATE votacoes 
+        SET resultado = $1, data_fim = NOW() 
+        WHERE id = $2
+      `,
+        [resultado, votacaoId]
+      );
+
+      // Atualizar status do projeto
+      await db.query(
+        `
+        UPDATE projetos 
+        SET status = $1 
+        WHERE id = (SELECT projeto_id FROM votacoes WHERE id = $2)
+      `,
+        [resultado, votacaoId]
+      );
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error registering vote:", error);
+    console.error("Erro ao registrar voto:", error);
     return NextResponse.json(
       { error: "Erro ao registrar voto" },
       { status: 500 }
