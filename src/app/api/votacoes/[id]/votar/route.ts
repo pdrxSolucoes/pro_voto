@@ -134,9 +134,9 @@ export async function POST(
         `📊 Progresso da votação: ${totalVotos}/${totalVereadores} votos`
       );
 
-      // Se todos votaram, finalizar automaticamente a votação
-      if (totalVotos >= totalVereadores) {
-        console.log(`🏁 Finalizando votação automaticamente - todos votaram`);
+      // Se EXATAMENTE todos os 12 vereadores votaram, finalizar automaticamente a votação
+      if (totalVotos === totalVereadores && totalVereadores === 12) {
+        console.log(`🏁 Finalizando votação automaticamente - todos os ${totalVereadores} vereadores votaram`);
 
         // Buscar todos os votos para contagem
         const todosVotos = await queryRunner.manager.find(Voto, {

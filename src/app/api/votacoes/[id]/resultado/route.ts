@@ -6,6 +6,7 @@ import { Votacao } from "@/server/entities/Votacao";
 import { Voto } from "@/server/entities/Voto";
 import { Usuario } from "@/server/entities/Usuario";
 import { Projeto } from "@/server/entities/Projeto";
+import { In } from "typeorm";
 
 interface Params {
   params: { id: string };
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest, { params }: Params) {
     const usuarioRepository = await getRepository(Usuario);
     const vereadores = await usuarioRepository.find({
       where: {
-        cargo: "vereador",
+        cargo: In(["vereador", "admin"]),
         ativo: true,
       },
       order: { nome: "ASC" },

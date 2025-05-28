@@ -116,7 +116,10 @@ export function useResultadoVotacao(votacaoId: number) {
 
     // Configurar intervalo para atualizações automáticas (a cada 3 segundos)
     const intervalId = setInterval(() => {
-      fetchResultados();
+      // Só atualizar se não estiver em loading
+      if (!loading) {
+        fetchResultados();
+      }
     }, 3000);
 
     // Limpar intervalo quando o componente for desmontado ou o ID mudar

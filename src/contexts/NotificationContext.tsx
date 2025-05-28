@@ -25,21 +25,21 @@ export const NotificationsProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
-  const addNotification = (message: string, type: NotificationType) => {
+  const addNotification = React.useCallback((message: string, type: NotificationType) => {
     const id = Math.random().toString(36).substring(2, 9);
     setNotifications((prev) => [...prev, { id, type, message }]);
 
     // Auto-remove notification after 5 seconds
     setTimeout(() => {
-      removeNotification(id);
+      setNotifications((prev) => prev.filter((notification) => notification.id !== id));
     }, 5000);
-  };
+  }, []);
 
-  const removeNotification = (id: string) => {
+  const removeNotification = React.useCallback((id: string) => {
     setNotifications((prev) =>
       prev.filter((notification) => notification.id !== id)
     );
-  };
+  }, []);
 
   return (
     <NotificationContext.Provider
