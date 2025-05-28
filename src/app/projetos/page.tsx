@@ -1,18 +1,15 @@
-// src/app/projetos/page.tsx - versão atualizada
 "use client";
 
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { RootLayout } from "@/components/Layout";
 import { Button } from "@/components/ui/Button";
-import {
-  useNotifications,
-  NotificationsProvider,
-} from "@/components/ui/Notification";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { ProjetoCard } from "@/components/ui/Card/ProjetoCard";
 import { ProjetoFormModal } from "@/components/ui/Modal/ModalProjeto";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface Projeto {
   id: number;
@@ -272,12 +269,10 @@ function ProjetosContent() {
 
 export default function ProjetosPage() {
   return (
-    <NotificationsProvider>
-      <RootLayout>
-        <div className="container mx-auto py-8 px-4">
-          <ProjetosContent />
-        </div>
-      </RootLayout>
-    </NotificationsProvider>
+    <RootLayout>
+      <div className="container mx-auto py-8 px-4">
+        <ProjetosContent />
+      </div>
+    </RootLayout>
   );
 }

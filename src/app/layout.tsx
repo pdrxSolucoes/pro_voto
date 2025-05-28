@@ -1,7 +1,9 @@
-// src/app/layout.tsx
-import { DevAuthHelper } from "@/components/DevAuthHelper";
-import { AuthProvider } from "@/contexts/AuthContext";
 import "@/styles/globals.css";
+
+import { Inter } from "next/font/google";
+import { NotificationsProvider } from "@/contexts/NotificationContext";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export default function RootLayout({
   children,
@@ -10,11 +12,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>
-        <AuthProvider>
-          {process.env.NODE_ENV === "development" && <DevAuthHelper />}
-          {children}
-        </AuthProvider>
+      <body className={inter.className}>
+        <NotificationsProvider>{children}</NotificationsProvider>
       </body>
     </html>
   );
