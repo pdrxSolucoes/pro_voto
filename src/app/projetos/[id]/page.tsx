@@ -4,13 +4,11 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { RootLayout } from "@/components/Layout";
 import { Button } from "@/components/ui/Button";
-import {
-  useNotifications,
-  NotificationsProvider,
-} from "@/components/ui/Notification";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 interface Projeto {
   id: number;
@@ -23,19 +21,23 @@ interface Projeto {
 
 interface Votacao {
   id: number;
-  data_inicio: string;
-  data_fim: string | null;
-  status: "em_andamento" | "finalizada";
+  dataInicio: string;
+  dataFim: string | null;
+  data_criacao: string;
+  data_atualizacao: string;
+  resultado: "aprovada" | "reprovada" | "empate" | null;
+  votosFavor: number;
+  votosContra: number;
+  abstencoes: number;
   votos: Voto[];
 }
 
 interface Voto {
   id: number;
-  voto: "aprovado" | "reprovado" | "abstencao";
-  usuario: {
-    id: number;
-    nome: string;
-  };
+  voto: "aprovar" | "reprovar" | "abster";
+  vereadorId: number;
+  votacaoId: number;
+  dataVoto: string;
 }
 
 const api = axios.create({
@@ -69,7 +71,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
   const { isAdmin, user, loading: authLoading } = useAuth();
   const { addNotification } = useNotifications();
   const router = useRouter();
-
+  console.log(projeto?.votacoes);
   useEffect(() => {
     if (!authLoading) {
       if (!user) {
@@ -185,11 +187,37 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
     return statusClasses[status] || "bg-gray-100 text-gray-800";
   };
 
+  // Função para obter o nome do vereador pelo ID
+  const [vereadores, setVereadores] = useState<{ [key: number]: string }>({});
+
+  useEffect(() => {
+    const carregarVereadores = async () => {
+      try {
+        const response = await api.get("/usuarios");
+        if (response.data.success) {
+          const vereadoresMap: { [key: number]: string } = {};
+          response.data.usuarios.forEach((usuario: any) => {
+            vereadoresMap[usuario.id] = usuario.nome;
+          });
+          setVereadores(vereadoresMap);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar vereadores:", error);
+      }
+    };
+
+    carregarVereadores();
+  }, []);
+
+  const obterNomeVereador = (id: number): string => {
+    return vereadores[id] || `Vereador ${id}`;
+  };
+
   const contarVotos = (votos: Voto[]) => {
     const contagem = {
-      aprovado: 0,
-      reprovado: 0,
-      abstencao: 0,
+      aprovar: 0,
+      reprovar: 0,
+      abster: 0,
     };
 
     votos.forEach((voto) => {
@@ -254,7 +282,9 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                     <p className="font-medium">{projeto.id}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Data de Apresentação</p>
+                    <p className="text-sm text-gray-500">
+                      Data de Apresentação
+                    </p>
                     <p className="font-medium">
                       {formatarData(projeto.data_apresentacao)}
                     </p>
@@ -265,7 +295,9 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
 
             {projeto.votacoes && projeto.votacoes.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Histórico de Votações</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  Histórico de Votações
+                </h3>
                 <div className="space-y-4">
                   {projeto.votacoes.map((votacao) => (
                     <div
@@ -275,27 +307,21 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="font-medium">Votação #{votacao.id}</h4>
                         <Badge
-                          variant={
-                            votacao.status === "em_andamento"
-                              ? "default"
-                              : "outline"
-                          }
+                          variant={!votacao.dataFim ? "default" : "outline"}
                         >
-                          {votacao.status === "em_andamento"
-                            ? "Em andamento"
-                            : "Finalizada"}
+                          {!votacao.dataFim ? "Em andamento" : "Finalizada"}
                         </Badge>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-sm">
                         <div>
                           <span className="text-gray-500">Início:</span>{" "}
-                          {formatarData(votacao.data_inicio)}
+                          {formatarData(votacao.dataInicio)}
                         </div>
-                        {votacao.data_fim && (
+                        {votacao.dataFim && (
                           <div>
                             <span className="text-gray-500">Término:</span>{" "}
-                            {formatarData(votacao.data_fim)}
+                            {formatarData(votacao.dataFim)}
                           </div>
                         )}
                       </div>
@@ -309,7 +335,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                               <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="bg-green-50 p-2 rounded">
                                   <div className="text-xl font-bold text-green-700">
-                                    {contagem.aprovado}
+                                    {votacao.votosFavor || contagem.aprovar}
                                   </div>
                                   <div className="text-xs text-green-600">
                                     Aprovações
@@ -317,7 +343,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                                 </div>
                                 <div className="bg-red-50 p-2 rounded">
                                   <div className="text-xl font-bold text-red-700">
-                                    {contagem.reprovado}
+                                    {votacao.votosContra || contagem.reprovar}
                                   </div>
                                   <div className="text-xs text-red-600">
                                     Reprovações
@@ -325,7 +351,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                                 </div>
                                 <div className="bg-yellow-50 p-2 rounded">
                                   <div className="text-xl font-bold text-yellow-700">
-                                    {contagem.abstencao}
+                                    {votacao.abstencoes || contagem.abster}
                                   </div>
                                   <div className="text-xs text-yellow-600">
                                     Abstenções
@@ -344,43 +370,52 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                                     <th className="py-2 px-3 text-left">
                                       Vereador
                                     </th>
-                                    <th className="py-2 px-3 text-left">Voto</th>
+                                    <th className="py-2 px-3 text-left">
+                                      Voto
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                  {votacao.votos.map((voto) => (
-                                    <tr key={voto.id}>
-                                      <td className="py-2 px-3">
-                                        {voto.usuario.nome}
-                                      </td>
-                                      <td className="py-2 px-3">
-                                        <span
-                                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
-                                            voto.voto === "aprovado"
-                                              ? "bg-green-100 text-green-800"
-                                              : voto.voto === "reprovado"
-                                              ? "bg-red-100 text-red-800"
-                                              : "bg-yellow-100 text-yellow-800"
-                                          }`}
-                                        >
+                                  {votacao.votos.map((voto) => {
+                                    // Buscar o nome do vereador pelo ID
+                                    const vereadorNome = obterNomeVereador(
+                                      voto.vereadorId
+                                    );
+                                    return (
+                                      <tr key={voto.id}>
+                                        <td className="py-2 px-3">
+                                          {vereadorNome ||
+                                            `Vereador ID: ${voto.vereadorId}`}
+                                        </td>
+                                        <td className="py-2 px-3">
                                           <span
-                                            className={`w-2 h-2 rounded-full mr-1 ${
-                                              voto.voto === "aprovado"
-                                                ? "bg-green-500"
-                                                : voto.voto === "reprovado"
-                                                ? "bg-red-500"
-                                                : "bg-yellow-500"
+                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                                              voto.voto === "aprovar"
+                                                ? "bg-green-100 text-green-800"
+                                                : voto.voto === "reprovar"
+                                                ? "bg-red-100 text-red-800"
+                                                : "bg-yellow-100 text-yellow-800"
                                             }`}
-                                          ></span>
-                                          {voto.voto === "aprovado"
-                                            ? "Aprovado"
-                                            : voto.voto === "reprovado"
-                                            ? "Reprovado"
-                                            : "Abstenção"}
-                                        </span>
-                                      </td>
-                                    </tr>
-                                  ))}
+                                          >
+                                            <span
+                                              className={`w-2 h-2 rounded-full mr-1 ${
+                                                voto.voto === "aprovar"
+                                                  ? "bg-green-500"
+                                                  : voto.voto === "reprovar"
+                                                  ? "bg-red-500"
+                                                  : "bg-yellow-500"
+                                              }`}
+                                            ></span>
+                                            {voto.voto === "aprovar"
+                                              ? "Aprovado"
+                                              : voto.voto === "reprovar"
+                                              ? "Reprovado"
+                                              : "Abstenção"}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
                                 </tbody>
                               </table>
                             </div>
@@ -420,12 +455,10 @@ export default function ProjetoDetalhesPage({
   params: { id: string };
 }) {
   return (
-    <NotificationsProvider>
-      <RootLayout>
-        <div className="container mx-auto py-8 px-4">
-          <ProjetoDetalhesContent id={params.id} />
-        </div>
-      </RootLayout>
-    </NotificationsProvider>
+    <RootLayout>
+      <div className="container mx-auto py-8 px-4">
+        <ProjetoDetalhesContent id={params.id} />
+      </div>
+    </RootLayout>
   );
 }

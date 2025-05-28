@@ -1,7 +1,10 @@
-import React, { HTMLAttributes, ReactNode } from "react";
+import React, { HTMLAttributes, ReactNode, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import Image from "next/image";
+import { Button } from "@/components/ui/Button";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface HeaderProps extends HTMLAttributes<HTMLElement> {
   className?: string;
@@ -59,6 +62,14 @@ interface LayoutProps {
 }
 
 export function RootLayout({ children }: LayoutProps) {
+  const router = useRouter();
+  const { logout, user } = useAuth();
+  console.log("user", user);
+  const handleLogout = useCallback(() => {
+    logout();
+    router.push("/login");
+  }, [logout, router]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <Header>
@@ -74,17 +85,32 @@ export function RootLayout({ children }: LayoutProps) {
           </Link>
           <h1 className="text-xl font-bold">Sistema de Votação</h1>
         </div>
-        <nav className="hidden md:flex space-x-4">
-          <Link href="/" className="text-white hover:text-gray-200">
-            Início
-          </Link>
-          <a href="/projetos" className="text-white hover:text-gray-200">
-            Projetos
-          </a>
-          <a href="/votacao" className="text-white hover:text-gray-200">
-            Votação
-          </a>
-        </nav>
+        <div className="flex items-center space-x-4">
+          <nav className="hidden md:flex space-x-4">
+            <Link href="/" className="text-white hover:text-gray-200">
+              Início
+            </Link>
+            <Link href="/projetos" className="text-white hover:text-gray-200">
+              Projetos
+            </Link>
+            <Link href="/votacao" className="text-white hover:text-gray-200">
+              Votação
+            </Link>
+            <Link href="/usuarios" className="text-white hover:text-gray-200">
+              Usuários
+            </Link>
+          </nav>
+          {user && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleLogout}
+              className="ml-4"
+            >
+              Sair
+            </Button>
+          )}
+        </div>
       </Header>
 
       <Main>{children}</Main>

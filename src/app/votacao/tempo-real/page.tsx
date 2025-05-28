@@ -8,13 +8,11 @@ import { Badge } from "@/components/ui/Badge";
 import { useSearchParams } from "next/navigation";
 import { PainelVotacao } from "@/components/ui/PainelVotacao";
 import { useResultadoVotacao, useRegistrarVoto } from "@/hooks/useVotacao";
-import {
-  NotificationsProvider,
-  useNotifications,
-} from "@/components/ui/Notification";
+
 import { VotacaoAtiva } from "@/types/models";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
@@ -406,12 +404,10 @@ function VotacaoRealTimeContent() {
 
 export default function VotacaoTempoRealPage() {
   return (
-    <NotificationsProvider>
-      <RootLayout>
-        <div className="container mx-auto py-8 px-4">
-          <VotacaoRealTimeContent />
-        </div>
-      </RootLayout>
-    </NotificationsProvider>
+    <RootLayout>
+      <div className="container mx-auto py-8 px-4">
+        <VotacaoRealTimeContent />
+      </div>
+    </RootLayout>
   );
 }

@@ -46,17 +46,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Primeiro, verificar persistência dos dados
         const persistence = authUtils.checkPersistence();
 
-        if (!persistence.hasToken) {
-          console.log("❌ Nenhum token encontrado, usuário não autenticado");
-          setLoading(false);
-          return;
-        }
-
         // Obter o usuário armazenado primeiro
         const storedUser = authUtils.getUser();
         if (storedUser) {
           console.log("👤 Definindo usuário do localStorage:", storedUser.nome);
           setUser(storedUser);
+        }
+
+        if (!persistence.hasToken) {
+          console.log("❌ Nenhum token encontrado, usuário não autenticado");
+          setLoading(false);
+          return;
         }
 
         // Validar token no servidor
@@ -83,9 +83,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error("❌ Erro crítico na verificação de autenticação:", error);
-        // Em caso de erro crítico, limpar autenticação
-        authUtils.logout();
-        setUser(null);
+        // Em caso de erro crítico, manter o usuário do localStorage se existir
+        const storedUser = authUtils.getUser();
+        if (storedUser && !user) {
+          setUser(storedUser);
+        }
       } finally {
         setLoading(false);
         console.log("✅ Verificação de autenticação concluída");
