@@ -1,27 +1,9 @@
 // src/app/api/auth/setup/route.ts
 import { NextResponse } from "next/server";
-import { hasAdminUser, setupTestUser, createFirstAdmin } from "@/lib/auth";
+import { hasAdminUser, createFirstAdmin } from "@/lib/auth";
 
 export async function GET() {
   try {
-    // Verifique se estamos em ambiente de desenvolvimento
-    if (process.env.NODE_ENV !== "production") {
-      // Configure o usuário de teste
-      await setupTestUser();
-
-      // Verifique se existe algum admin
-      const adminExists = await hasAdminUser();
-
-      return NextResponse.json({
-        hasAdmin: adminExists,
-        testUserAvailable: true,
-        testCredentials: {
-          email: "admin@teste.com",
-          senha: "senha123",
-        },
-      });
-    }
-
     // Em produção, apenas verificamos se existe um admin
     const adminExists = await hasAdminUser();
 

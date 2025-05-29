@@ -4,46 +4,6 @@ import jwt from "jsonwebtoken";
 import { AppDataSource, initializeDatabase } from "./db/datasource";
 import { Usuario } from "@/server/entities/Usuario";
 
-// Verifique se estamos em ambiente de desenvolvimento
-const isDev = process.env.NODE_ENV !== "production";
-
-// Função para criar o usuário de teste se não existir (apenas em desenvolvimento)
-export async function setupTestUser() {
-  if (isDev) {
-    try {
-      await initializeDatabase();
-
-      const usuarioRepository = AppDataSource.getRepository(Usuario);
-
-      // Verifique se o usuário de teste já existe
-      const testUser = await usuarioRepository.findOne({
-        where: { email: "admin@teste.com" },
-      });
-
-      if (!testUser) {
-        console.log("Criando usuário de teste para desenvolvimento...");
-
-        // Crie a senha hash
-        const hashedPassword = await hash("senha123", 10);
-
-        // Crie o usuário de teste
-        const newTestUser = usuarioRepository.create({
-          nome: "Administrador Teste",
-          email: "admin@teste.com",
-          senha: hashedPassword,
-          cargo: "admin",
-          ativo: true,
-        });
-
-        await usuarioRepository.save(newTestUser);
-        console.log("Usuário de teste criado com sucesso!");
-      }
-    } catch (error) {
-      console.error("Erro ao configurar usuário de teste:", error);
-    }
-  }
-}
-
 export async function authenticateUser(email: string, senha: string) {
   try {
     // Inicializar a conexão com o banco

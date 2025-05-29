@@ -69,15 +69,6 @@ function HomePageContent() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  // Usuário simulado (na implementação real, viria da autenticação)
-  const usuario = {
-    id: 10,
-    nome: "Vereador Teste",
-    cargo: "vereador",
-  };
-
-  const isAdmin = usuario.cargo === "admin";
-
   // Carregar dados iniciais
   useEffect(() => {
     carregarDados();
