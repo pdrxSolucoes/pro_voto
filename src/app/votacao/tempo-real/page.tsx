@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { RootLayout } from "@/components/Layout";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
+import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PainelVotacao } from "@/components/ui/PainelVotacao";
 import { useResultadoVotacao, useRegistrarVoto } from "@/hooks/useVotacao";
-
 import { VotacaoAtiva } from "@/types/models";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,10 +16,13 @@ import { useNotifications } from "@/contexts/NotificationContext";
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
   const votacaoIdParam = searchParams.get("id");
+  const router = useRouter();
 
-  const [votacaoAtiva, setVotacaoAtiva] = useState<number | null>(
-    votacaoIdParam ? parseInt(votacaoIdParam) : null
-  );
+  const [votacaoAtiva, setVotacaoAtiva] = useState<number | null>(() => {
+    const id = Number(votacaoIdParam);
+    return isNaN(id) ? null : id;
+  });
+
   const [votacoesDisponiveis, setVotacoesDisponiveis] = useState<
     VotacaoAtiva[]
   >([]);
@@ -51,12 +53,11 @@ function VotacaoRealTimeContent() {
       try {
         setCarregandoLista(true);
         console.log("Carregando votações ativas...");
-        const response = await api.get("/votacoes/ativas");
-        const data = response.data;
-        if (!response) {
-          throw new Error(`Erro na requisição: ${response}`);
-        }
+        const { data } = await api.get("/votacoes/ativas");
 
+        if (!data) {
+          throw new Error(`Erro na requisição: ${data}`);
+        }
         console.log("Votações carregadas:", data.votacoes);
         setVotacoesDisponiveis(data.votacoes || []);
       } catch (error) {
@@ -140,23 +141,14 @@ function VotacaoRealTimeContent() {
 
   // Selecionar uma votação para visualizar
   const selecionarVotacao = (id: number) => {
-    console.log(`Selecionando votação ${id}`);
     setVotacaoAtiva(id);
-
-    // Atualizar a URL sem recarregar a página
-    const url = new URL(window.location.href);
-    url.searchParams.set("id", id.toString());
-    window.history.pushState({}, "", url);
+    router.push(`?id=${id}`, { scroll: false });
   };
 
   // Voltar para a lista de votações
   const voltarParaLista = () => {
     setVotacaoAtiva(null);
-
-    // Remover o parâmetro da URL
-    const url = new URL(window.location.href);
-    url.searchParams.delete("id");
-    window.history.pushState({}, "", url);
+    router.push("/", { scroll: false }); // ou rota base desejada
   };
 
   return (
