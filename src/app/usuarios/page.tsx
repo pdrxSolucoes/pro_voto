@@ -3,55 +3,134 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { usuariosService } from "@/services/usuariosService";
+import { usuarioService, Usuario } from "@/services/usuarioService";
 import { RootLayout } from "@/components/Layout";
 import { useNotifications } from "@/contexts/NotificationContext";
-
-interface Usuario {
-  id: number;
-  nome: string;
-  email: string;
-  cargo: string;
-  ativo: boolean;
-  data_criacao: string;
-}
+import { UsuarioFormModal } from "@/components/ui/Modal/ModalUsuario";
 
 function UsuariosContent() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [usuarioEmEdicao, setUsuarioEmEdicao] = useState<Usuario | undefined>(
+    undefined
+  );
+  const [limiteUsuariosAtingido, setLimiteUsuariosAtingido] = useState(false);
   const { addNotification } = useNotifications();
 
+  const fetchUsuarios = async () => {
+    setIsLoading(true);
+    try {
+      const data = await usuarioService.getUsuarios();
+      setUsuarios(data);
+
+      // Verificar limite de usuários ativos
+      const usuariosAtivos = data.filter((u) => u.ativo).length;
+      setLimiteUsuariosAtingido(usuariosAtivos >= 12);
+
+      setError(null);
+    } catch (err) {
+      setError("Erro ao carregar usuários");
+      addNotification("Erro ao carregar usuários", "error");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsuarios = async () => {
-      setIsLoading(true);
-      try {
-        const response = await usuariosService.getAll();
-        if (response.success) {
-          setUsuarios(response.data);
-        } else {
-          setError(response.error || "Erro ao carregar usuários");
-          addNotification(response.error || "Erro ao carregar usuários", "error");
-        }
-      } catch (err) {
-        setError("Erro ao carregar usuários");
-        addNotification("Erro ao carregar usuários", "error");
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchUsuarios();
-  }, [addNotification]);
+  }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
+  const handleNovoUsuario = async () => {
+    if (limiteUsuariosAtingido) {
+      addNotification(
+        "Limite de 12 usuários ativos atingido. Desative um usuário antes de criar outro.",
+        "error"
+      );
+    }
+
+    setUsuarioEmEdicao(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleEditarUsuario = async (id: number) => {
+    try {
+      setIsLoading(true);
+      const usuario = await usuarioService.getUsuarioById(id);
+      setUsuarioEmEdicao(usuario);
+      setIsModalOpen(true);
+    } catch (err) {
+      addNotification("Erro ao carregar dados do usuário", "error");
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSalvarUsuario = async (data: any) => {
+    try {
+      if (data.id) {
+        // Edição de usuário existente
+        await usuarioService.updateUsuario(data.id, {
+          nome: data.nome,
+          email: data.email,
+          cargo: data.cargo,
+        });
+        addNotification("Usuário atualizado com sucesso!", "success");
+      } else {
+        // Criação de novo usuário
+        if (limiteUsuariosAtingido) {
+          addNotification(
+            "Limite de 12 usuários ativos atingido. Desative um usuário antes de criar outro.",
+            "error"
+          );
+          throw new Error("Limite de usuários atingido");
+        }
+
+        await usuarioService.createUsuario({
+          nome: data.nome,
+          email: data.email,
+          cargo: data.cargo,
+          senha: data.senha,
+          ativo: true,
+          data_criacao: new Date(),
+        });
+        addNotification("Usuário criado com sucesso!", "success");
+      }
+
+      setIsModalOpen(false);
+      fetchUsuarios(); // Atualiza a lista de usuários
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Erro ao salvar usuário";
+      if (errorMsg !== "Limite de usuários atingido") {
+        addNotification(errorMsg, "error");
+      }
+      throw err;
+    }
+  };
+
+  const handleDesativarUsuario = async (id: number) => {
+    try {
+      await usuarioService.updateUsuario(id, { ativo: false });
+      addNotification("Usuário desativado com sucesso!", "success");
+      fetchUsuarios(); // Atualiza a lista de usuários
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Erro ao desativar usuário";
+      addNotification(errorMsg, "error");
+      throw err;
+    }
+  };
+
+  const formatDate = (date: string | Date) => {
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
-    }).format(date);
+    }).format(new Date(date));
   };
 
   return (
@@ -62,9 +141,9 @@ function UsuariosContent() {
           <Link href="/">
             <Button variant="outline">Voltar ao Menu</Button>
           </Link>
-          <Link href="/usuarios/criar">
-            <Button variant="primary">Novo Usuário</Button>
-          </Link>
+          <Button variant="primary" onClick={handleNovoUsuario}>
+            Novo Usuário
+          </Button>
         </div>
       </div>
 
@@ -80,9 +159,13 @@ function UsuariosContent() {
       ) : usuarios.length === 0 ? (
         <div className="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-8 rounded text-center">
           <p className="text-lg">Nenhum usuário cadastrado.</p>
-          <Link href="/usuarios/criar" className="text-confresa-azul hover:underline mt-2 inline-block">
+          <Button
+            variant="link"
+            className="text-confresa-azul hover:underline mt-2"
+            onClick={handleNovoUsuario}
+          >
             Clique aqui para criar o primeiro usuário
-          </Link>
+          </Button>
         </div>
       ) : (
         <div className="overflow-x-auto bg-white rounded-lg shadow">
@@ -155,21 +238,16 @@ function UsuariosContent() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(usuario.data_criacao)}
+                    {usuario.data_criacao && formatDate(usuario.data_criacao)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link
-                      href={`/usuarios/${usuario.id}`}
+                    <Button
+                      variant="link"
                       className="text-confresa-azul hover:text-confresa-azul/80 mr-4"
-                    >
-                      Detalhes
-                    </Link>
-                    <Link
-                      href={`/usuarios/${usuario.id}/editar`}
-                      className="text-confresa-azul hover:text-confresa-azul/80"
+                      onClick={() => handleEditarUsuario(usuario.id)}
                     >
                       Editar
-                    </Link>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -177,6 +255,16 @@ function UsuariosContent() {
           </table>
         </div>
       )}
+
+      {/* Modal de criação/edição de usuário */}
+      <UsuarioFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        usuario={usuarioEmEdicao}
+        onSave={handleSalvarUsuario}
+        onDesativar={handleDesativarUsuario}
+        limiteUsuariosAtingido={limiteUsuariosAtingido}
+      />
     </div>
   );
 }

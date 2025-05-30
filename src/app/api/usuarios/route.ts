@@ -11,10 +11,18 @@ export async function GET(request: NextRequest) {
     if (!AppDataSource.isInitialized) {
       await initializeDatabase();
     }
-    
+
     const usuarioRepository = AppDataSource.getRepository(Usuario);
     const usuarios = await usuarioRepository.find({
-      select: ["id", "nome", "email", "cargo", "ativo", "data_criacao", "data_atualizacao"]
+      select: [
+        "id",
+        "nome",
+        "email",
+        "cargo",
+        "ativo",
+        "data_criacao",
+        "data_atualizacao",
+      ],
     });
 
     return NextResponse.json({ success: true, usuarios });
@@ -34,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (!AppDataSource.isInitialized) {
       await initializeDatabase();
     }
-    
+
     const usuarioRepository = AppDataSource.getRepository(Usuario);
     const body = await request.json();
     const { nome, email, senha, cargo } = body;
@@ -83,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Retornar o usuário criado (sem a senha)
     const { senha: _, ...usuarioSemSenha } = novoUsuario;
-    
+
     return NextResponse.json(
       { success: true, usuario: usuarioSemSenha },
       { status: 201 }

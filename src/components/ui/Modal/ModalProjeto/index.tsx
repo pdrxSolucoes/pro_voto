@@ -2,18 +2,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 
-interface Projeto {
-  id: number;
-  titulo: string;
-  descricao: string;
-  data_apresentacao: string;
-  status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
-}
-
 interface ProjetoFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  projeto?: Projeto;
+  projeto?: ProjetoInterface;
   onSave: (data: { titulo: string; descricao: string }) => Promise<void>;
 }
 
