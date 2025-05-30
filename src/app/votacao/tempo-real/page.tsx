@@ -12,6 +12,7 @@ import { VotacaoAtiva } from "@/types/models";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { votacaoService } from "@/services/votacaoService";
 
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
@@ -52,17 +53,14 @@ function VotacaoRealTimeContent() {
     const carregarVotacoes = async () => {
       try {
         setCarregandoLista(true);
-        console.log("Carregando votações ativas...");
-        const { data } = await api.get("/votacoes/ativas");
-
-        if (!data) {
-          throw new Error(`Erro na requisição: ${data}`);
-        }
-        console.log("Votações carregadas:", data.votacoes);
-        setVotacoesDisponiveis(data.votacoes || []);
+        console.log("📋 Carregando votações ativas...");
+        const data = await votacaoService.getVotacoesAtivas();
+        console.log("✅ Votações carregadas:", data);
+        setVotacoesDisponiveis(data || []);
       } catch (error) {
-        console.error("Erro ao carregar votações:", error);
+        console.error("❌ Erro ao carregar votações:", error);
         addNotification("Erro ao carregar lista de votações", "error");
+        setVotacoesDisponiveis([]);
       } finally {
         setCarregandoLista(false);
       }
@@ -72,18 +70,19 @@ function VotacaoRealTimeContent() {
   }, [addNotification]);
 
   // Efeito para exibir notificações de novos votos
-  useEffect(() => {
-    if (ultimoVoto) {
-      addNotification(
-        `${ultimoVoto.vereador} ${ultimoVoto.voto} o projeto.`,
-        "info"
-      );
-    }
-  }, [ultimoVoto, addNotification]);
+  // useEffect(() => {
+  //   if (ultimoVoto) {
+  //     addNotification(
+  //       `${ultimoVoto.vereador} ${ultimoVoto.voto} o projeto.`,
+  //       "info"
+  //     );
+  //   }
+  // }, [ultimoVoto, addNotification]);
 
   // Efeito para exibir notificações de erros
   useEffect(() => {
-    if (erroVotacao) {
+    if (erroVotacao && votacaoAtiva) {
+      console.log(`❌ Erro na votação ${votacaoAtiva}:`, erroVotacao.message);
       addNotification(
         `Erro ao carregar dados: ${erroVotacao.message}`,
         "error"
@@ -91,12 +90,13 @@ function VotacaoRealTimeContent() {
     }
 
     if (erroRegistro) {
+      console.log(`❌ Erro no registro:`, erroRegistro.message);
       addNotification(
         `Erro ao registrar voto: ${erroRegistro.message}`,
         "error"
       );
     }
-  }, [erroVotacao, erroRegistro, addNotification]);
+  }, [erroVotacao, erroRegistro, addNotification, votacaoAtiva]);
 
   // Função para registrar o voto
   const handleVotar = async (
@@ -141,14 +141,16 @@ function VotacaoRealTimeContent() {
 
   // Selecionar uma votação para visualizar
   const selecionarVotacao = (id: number) => {
+    console.log(`📌 Selecionando votação: ${id}`);
     setVotacaoAtiva(id);
     router.push(`?id=${id}`, { scroll: false });
   };
 
   // Voltar para a lista de votações
   const voltarParaLista = () => {
+    console.log(`🔙 Voltando para lista`);
     setVotacaoAtiva(null);
-    router.push("/", { scroll: false }); // ou rota base desejada
+    router.push("/votacao/tempo-real", { scroll: false });
   };
 
   return (

@@ -43,10 +43,19 @@ export function useResultadoVotacao(votacaoId: number) {
   const [ultimoVoto, setUltimoVoto] = useState<UltimoVoto | null>(null);
 
   const fetchResultados = async () => {
-    try {
-      console.log(`🔍 Buscando resultado da votação ${votacaoId}`);
+    // Validação mais robusta do ID
+    const id = Number(votacaoId);
+    if (isNaN(id) || id <= 0) {
+      console.log(`❌ ID inválido: ${votacaoId} (convertido: ${id})`);
+      return;
+    }
 
-      const response = await axios.get(`/api/votacoes/${votacaoId}/resultado`);
+    try {
+      setLoading(true);
+      setError(null); // Limpar erro anterior
+      console.log(`🔍 Buscando resultado da votação ${id}`);
+
+      const response = await axios.get(`/api/votacoes/${id}/resultado`);
 
       console.log("📊 Resposta da API:", response.data);
 
@@ -95,38 +104,59 @@ export function useResultadoVotacao(votacaoId: number) {
       } else {
         setError(new Error("Erro desconhecido"));
       }
-
-      // Não limpar os dados em caso de erro para manter a última versão válida
-      // setResultado(null);
-      // setUltimoVoto(null);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!votacaoId || votacaoId <= 0) {
-      setError(new Error("ID de votação inválido"));
+    console.log(
+      `🔄 useEffect executado com votacaoId: ${votacaoId} (tipo: ${typeof votacaoId})`
+    );
+
+    // Conversão e validação mais robusta
+    const id = Number(votacaoId);
+
+    // Resetar estados quando o ID mudar ou for inválido
+    if (isNaN(id) || id <= 0) {
+      console.log(`❌ ID inválido no useEffect: ${votacaoId} -> ${id}`);
+      // setError(new Error(`ID de votação inválido: ${votacaoId}`));
       setLoading(false);
+      setResultado(null);
+      setUltimoVoto(null);
       return;
     }
 
+    console.log(`✅ ID válido, iniciando busca: ${id}`);
+
+    // Limpar estados antes de buscar novos dados
+    setError(null);
+    setLoading(true);
+
     // Buscar dados inicialmente
-    fetchResultados();
+    let isMounted = true;
+    const fetchData = async () => {
+      if (isMounted) {
+        await fetchResultados();
+      }
+    };
+
+    fetchData();
 
     // Configurar intervalo para atualizações automáticas (a cada 3 segundos)
     const intervalId = setInterval(() => {
-      // Só atualizar se não estiver em loading
-      if (!loading) {
+      if (isMounted) {
         fetchResultados();
       }
     }, 3000);
 
     // Limpar intervalo quando o componente for desmontado ou o ID mudar
     return () => {
+      console.log(`🧹 Limpando interval para votação ${id}`);
+      isMounted = false;
       clearInterval(intervalId);
     };
-  }, [votacaoId]);
+  }, [votacaoId]); // Dependência apenas do votacaoId
 
   return {
     resultado,

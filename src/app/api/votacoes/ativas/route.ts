@@ -1,32 +1,54 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db/database";
 import { formatarData } from "@/lib/utils";
+import { getRepository } from "@/lib/db/index";
+import { Votacao } from "@/server/entities/Votacao";
+import { Usuario } from "@/server/entities/Usuario";
+import { In } from "typeorm";
 
 export async function GET() {
   try {
-    // Buscar votações ativas no banco de dados
-    const votacoes = await db.query(`
-  SELECT DISTINCT ON (v.projeto_id)
-    v.id,
-    p.titulo as "projetoTitulo",
-    v.data_inicio as "dataInicio",
-    (SELECT COUNT(*) FROM votos WHERE votacao_id = v.id) as "votosRegistrados",
-    (SELECT COUNT(*) FROM usuarios WHERE cargo = 'vereador') as "totalVereadores"
-  FROM 
-    votacoes v
-  JOIN 
-    projetos p ON v.projeto_id = p.id
-  WHERE 
-    v.resultado = 'em_andamento'
-  ORDER BY 
-    v.projeto_id, v.data_inicio DESC
-`);
+    // Buscar votações ativas usando TypeORM
+    const votacaoRepository = await getRepository(Votacao);
+    const votacoesAtivas = await votacaoRepository.find({
+      where: { resultado: "em_andamento" },
+      relations: ["projeto", "votos"],
+      order: { dataInicio: "DESC" },
+    });
 
-    // Formatar as datas para exibição
-    const votacoesFormatadas = votacoes.map((votacao: any) => ({
-      ...votacao,
-      dataInicio: formatarData(votacao.dataInicio),
-    }));
+    // Buscar total de vereadores
+    const usuarioRepository = await getRepository(Usuario);
+    const totalVereadores = await usuarioRepository.count({
+      where: {
+        cargo: In(["vereador", "admin"]),
+
+        ativo: true,
+      },
+    });
+
+    // Filtrar para ter apenas uma votação por projeto (a mais recente)
+    const projetosMap = new Map();
+    votacoesAtivas.forEach((votacao) => {
+      const projetoId = votacao.projeto?.id;
+      if (
+        !projetosMap.has(projetoId) ||
+        new Date(votacao.dataInicio) >
+          new Date(projetosMap.get(projetoId).dataInicio)
+      ) {
+        projetosMap.set(projetoId, votacao);
+      }
+    });
+
+    // Formatar dados para resposta
+    const votacoesFormatadas = Array.from(projetosMap.values()).map(
+      (votacao) => ({
+        id: votacao.id,
+        projetoTitulo: votacao.projeto?.titulo || "Sem título",
+        dataInicio: formatarData(votacao.dataInicio),
+        votosRegistrados: votacao.votos?.length || 0,
+        totalVereadores,
+      })
+    );
+
     return NextResponse.json({ votacoes: votacoesFormatadas });
   } catch (error) {
     console.error("Erro ao buscar votações ativas:", error);

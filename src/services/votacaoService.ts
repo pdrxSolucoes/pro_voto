@@ -2,6 +2,7 @@
 import type { VotacaoInterface } from "@/interfaces/VotacaoService";
 import api from "./api";
 import type { VotoInterface } from "@/interfaces/VotoInterface";
+import type { VotacaoAtiva } from "@/types/models";
 
 export interface ResultadoVotacao {
   total_votos: number;
@@ -13,7 +14,7 @@ export interface ResultadoVotacao {
 }
 
 export const votacaoService = {
-  async getVotacoesAtivas(): Promise<VotacaoInterface[]> {
+  async getVotacoesAtivas(): Promise<VotacaoAtiva[]> {
     const { data } = await api.get("/votacoes/ativas");
     return data.votacoes;
   },
