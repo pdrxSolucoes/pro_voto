@@ -4,15 +4,14 @@ import { useState, useEffect } from "react";
 import { RootLayout } from "@/components/Layout";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PainelVotacao } from "@/components/ui/PainelVotacao";
 import { useResultadoVotacao, useRegistrarVoto } from "@/hooks/useVotacao";
 import { VotacaoAtiva } from "@/types/models";
-import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { votacaoService } from "@/services/votacaoService";
+import { VotacaoCard } from "@/components/ui/Card/VotacaoCard";
 
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
@@ -248,79 +247,12 @@ function VotacaoRealTimeContent() {
       ) : votacoesDisponiveis.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {votacoesDisponiveis.map((votacao) => (
-            <Card
+            <VotacaoCard
               key={votacao.id}
-              className="overflow-hidden border-none shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-              onClick={() => selecionarVotacao(votacao.id)}
-            >
-              <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b">
-                <div className="flex justify-between items-start">
-                  <h3 className="text-lg font-bold text-gray-800">
-                    {votacao.projetoTitulo}
-                  </h3>
-                  <Badge
-                    variant="default"
-                    className="bg-green-500 hover:bg-green-600"
-                  >
-                    Em Votação
-                  </Badge>
-                </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Iniciada em {votacao.dataInicio}
-                </div>
-              </div>
-
-              <CardContent className="p-6">
-                <div className="flex flex-col">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">Progresso da Votação</span>
-                    <span className="text-sm font-medium text-primary">
-                      {votacao.votosRegistrados}/{votacao.totalVereadores} votos
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                    <div
-                      className="bg-primary h-3 rounded-full transition-all duration-500 ease-in-out"
-                      style={{
-                        width: `${
-                          (votacao.votosRegistrados / votacao.totalVereadores) *
-                          100
-                        }%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center mt-4">
-                  <div className="flex items-center">
-                    <div className="flex -space-x-2">
-                      {/* Avatares simulados de vereadores */}
-                      {[...Array(Math.min(3, votacao.votosRegistrados))].map(
-                        (_, i) => (
-                          <div
-                            key={i}
-                            className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium"
-                          >
-                            V{i + 1}
-                          </div>
-                        )
-                      )}
-                      {votacao.votosRegistrados > 3 && (
-                        <div className="w-8 h-8 rounded-full bg-primary text-white border-2 border-white flex items-center justify-center text-xs font-medium">
-                          +{votacao.votosRegistrados - 3}
-                        </div>
-                      )}
-                    </div>
-                    <span className="ml-3 text-sm text-gray-600">
-                      já votaram
-                    </span>
-                  </div>
-                  <Button variant="primary" className="px-4 py-2">
-                    Participar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+              votacao={votacao}
+              onSelect={selecionarVotacao}
+              isClickable={true}
+            />
           ))}
         </div>
       ) : (
