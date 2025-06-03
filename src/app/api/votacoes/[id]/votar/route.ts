@@ -134,9 +134,11 @@ export async function POST(
         `📊 Progresso da votação: ${totalVotos}/${totalVereadores} votos`
       );
 
-      // Se EXATAMENTE todos os 12 vereadores votaram, finalizar automaticamente a votação
-      if (totalVotos === totalVereadores && totalVereadores === 12) {
-        console.log(`🏁 Finalizando votação automaticamente - todos os ${totalVereadores} vereadores votaram`);
+      // Se EXATAMENTE 12 votos foram registrados, finalizar automaticamente a votação
+      if (totalVotos === 12) {
+        console.log(
+          `🏁 Finalizando votação automaticamente - total de 12 votos alcançado`
+        );
 
         // Buscar todos os votos para contagem
         const todosVotos = await queryRunner.manager.find(Voto, {
@@ -155,7 +157,13 @@ export async function POST(
         ).length;
 
         // Determinar resultado
-        const resultado = votosFavor > votosContra ? "aprovada" : "reprovada";
+        let resultado: "aprovada" | "reprovada" = "reprovada";
+
+        // Se houver mais votos a favor do que contra, o projeto é aprovado
+        if (votosFavor > votosContra) {
+          resultado = "aprovada";
+        }
+        // Se houver empate e abstencoes, considerar como reprovado
 
         console.log(`📈 Resultado da votação:`, {
           favor: votosFavor,
@@ -166,7 +174,7 @@ export async function POST(
 
         // Atualizar votação
         await queryRunner.manager.update(Votacao, votacaoId, {
-          resultado: resultado,
+          resultado: resultado as any,
           dataFim: new Date(),
           votosFavor: votosFavor,
           votosContra: votosContra,
@@ -176,7 +184,7 @@ export async function POST(
         // Atualizar status do projeto se existir
         if (votacao.projeto) {
           await queryRunner.manager.update(Projeto, votacao.projeto.id, {
-            status: resultado,
+            status: resultado as any,
           });
           console.log(`📋 Status do projeto atualizado para: ${resultado}`);
         }

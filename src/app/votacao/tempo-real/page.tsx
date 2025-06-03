@@ -12,6 +12,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { votacaoService } from "@/services/votacaoService";
 import { VotacaoCard } from "@/components/ui/Card/VotacaoCard";
+import { useAutoFinalizarVotacao } from "@/hooks/useAutoFinalizarVotacao";
+import { useFinalizarVotacao } from "@/hooks/useFinalizarVotacao";
 
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
@@ -40,12 +42,28 @@ function VotacaoRealTimeContent() {
     error: erroVotacao,
     ultimoVoto,
   } = useResultadoVotacao(votacaoAtiva || 0);
+  
+  // Hook para monitorar e finalizar automaticamente votações com 12 votos
+  const {
+    iniciarMonitoramento,
+    pararMonitoramento,
+    isMonitoring,
+    lastResult,
+  } = useAutoFinalizarVotacao(votacaoAtiva || undefined);
 
   const {
     registrarVoto,
     loading: registrandoVoto,
     error: erroRegistro,
   } = useRegistrarVoto();
+  
+  // Hook para finalizar manualmente a votação
+  const {
+    finalizarVotacao,
+    loading: finalizandoVotacao,
+    error: erroFinalizacao,
+    success: sucessoFinalizacao,
+  } = useFinalizarVotacao();
 
   // Carregar lista de votações disponíveis
   useEffect(() => {
@@ -77,6 +95,30 @@ function VotacaoRealTimeContent() {
   //     );
   //   }
   // }, [ultimoVoto, addNotification]);
+  
+  // Efeito para iniciar o monitoramento automático quando uma votação estiver ativa
+  useEffect(() => {
+    if (votacaoAtiva) {
+      console.log(`🔍 Iniciando monitoramento automático da votação ${votacaoAtiva}`);
+      iniciarMonitoramento();
+    } else {
+      pararMonitoramento();
+    }
+    
+    return () => {
+      pararMonitoramento();
+    };
+  }, [votacaoAtiva, iniciarMonitoramento, pararMonitoramento]);
+  
+  // Efeito para notificar quando uma votação for finalizada automaticamente
+  useEffect(() => {
+    if (lastResult && lastResult.votacoes_finalizadas > 0) {
+      addNotification(
+        `Votação finalizada automaticamente com ${lastResult.detalhes[0]?.contagem?.favor || 0} votos a favor e ${lastResult.detalhes[0]?.contagem?.contra || 0} votos contra.`,
+        "success"
+      );
+    }
+  }, [lastResult, addNotification]);
 
   // Efeito para exibir notificações de erros
   useEffect(() => {
@@ -95,7 +137,15 @@ function VotacaoRealTimeContent() {
         "error"
       );
     }
-  }, [erroVotacao, erroRegistro, addNotification, votacaoAtiva]);
+    
+    if (erroFinalizacao) {
+      console.log(`❌ Erro na finalização:`, erroFinalizacao);
+      addNotification(
+        `Erro ao finalizar votação: ${erroFinalizacao}`,
+        "error"
+      );
+    }
+  }, [erroVotacao, erroRegistro, erroFinalizacao, addNotification, votacaoAtiva]);
 
   // Função para registrar o voto
   const handleVotar = async (
@@ -135,6 +185,43 @@ function VotacaoRealTimeContent() {
         "error"
       );
       return false;
+    }
+  };
+  
+  // Função para finalizar manualmente a votação
+  const handleFinalizarVotacao = async (): Promise<void> => {
+    if (!votacaoAtiva) {
+      console.error("❌ Nenhuma votação ativa selecionada");
+      addNotification("Erro: Nenhuma votação selecionada", "error");
+      return;
+    }
+    
+    try {
+      console.log(`🏁 Finalizando manualmente a votação ${votacaoAtiva}`);
+      
+      const resultado = await finalizarVotacao(votacaoAtiva);
+      
+      if (resultado && resultado.success) {
+        console.log("✅ Votação finalizada com sucesso:", resultado);
+        addNotification(
+          `Votação finalizada com sucesso! Resultado: ${resultado.resultado}`,
+          "success"
+        );
+      } else {
+        console.error("❌ Falha ao finalizar votação");
+        addNotification(
+          `Falha ao finalizar votação: ${resultado?.error || "Erro desconhecido"}`,
+          "error"
+        );
+      }
+    } catch (error) {
+      console.error("❌ Erro ao finalizar votação:", error);
+      addNotification(
+        `Erro ao finalizar votação: ${
+          error instanceof Error ? error.message : "Erro desconhecido"
+        }`,
+        "error"
+      );
     }
   };
 
@@ -208,6 +295,8 @@ function VotacaoRealTimeContent() {
                   votacao={resultado}
                   vereadorId={user?.id}
                   onVotar={handleVotar}
+                  isAdmin={user?.cargo === "admin"}
+                  onFinalizar={handleFinalizarVotacao}
                 />
               </div>
             </CardContent>

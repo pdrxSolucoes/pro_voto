@@ -3,19 +3,23 @@ import { Card } from "./Card";
 import { Button } from "./Button";
 import { cn } from "@/lib/utils";
 import { Badge } from "./Badge";
-import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, Flag } from "lucide-react";
 import type { ResultadoVotacao } from "@/hooks/useVotacao";
 
 interface PainelVotacaoProps {
   votacao: ResultadoVotacao;
   vereadorId?: number;
   onVotar?: (voto: "aprovar" | "desaprovar" | "abster") => Promise<boolean>;
+  isAdmin?: boolean;
+  onFinalizar?: () => Promise<void>;
 }
 
 export function PainelVotacao({
   votacao,
   vereadorId,
   onVotar,
+  isAdmin = false,
+  onFinalizar,
 }: PainelVotacaoProps) {
   const [votoSelecionado, setVotoSelecionado] = useState<
     "aprovar" | "desaprovar" | "abster" | null
@@ -23,6 +27,8 @@ export function PainelVotacao({
   const [confirmando, setConfirmando] = useState(false);
   const [votando, setVotando] = useState(false);
   const [votoConfirmado, setVotoConfirmado] = useState(false);
+  const [finalizando, setFinalizando] = useState(false);
+  const [confirmandoFinalizacao, setConfirmandoFinalizacao] = useState(false);
 
   // Verifica se o vereador já votou
   const vereadorAtual = vereadorId
@@ -47,6 +53,8 @@ export function PainelVotacao({
     setConfirmando(false);
     setVotando(false);
     setVotoConfirmado(false);
+    setFinalizando(false);
+    setConfirmandoFinalizacao(false);
   }, [votacao.id]);
 
   // Função para confirmar voto
@@ -66,30 +74,88 @@ export function PainelVotacao({
     }
   };
 
+  // Função para finalizar votação
+  const handleFinalizar = async () => {
+    if (!onFinalizar) return;
+
+    setFinalizando(true);
+
+    try {
+      await onFinalizar();
+    } finally {
+      setFinalizando(false);
+      setConfirmandoFinalizacao(false);
+    }
+  };
+
   return (
     <div className="painel-votacao">
       <div className="mb-6">
-        <h2 className="text-xl font-bold mb-2">
-          Votação: {votacao.projeto.titulo}
-        </h2>
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
-          <span>Iniciada em: {votacao.data_inicio}</span>
-          {votacao.data_fim && <span>Encerrada em: {votacao.data_fim}</span>}
-          <Badge
-            variant={
-              votacao.resultado === "aprovada"
-                ? "success"
-                : votacao.resultado === "reprovada"
-                ? "danger"
-                : "warning"
-            }
-          >
-            {votacao.resultado === "aprovada"
-              ? "Aprovada"
-              : votacao.resultado === "reprovada"
-              ? "Reprovada"
-              : "Em Andamento"}
-          </Badge>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-xl font-bold mb-2">
+              Votação: {votacao.projeto.titulo}
+            </h2>
+            <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <span>Iniciada em: {votacao.data_inicio}</span>
+              {votacao.data_fim && (
+                <span>Encerrada em: {votacao.data_fim}</span>
+              )}
+              <Badge
+                variant={
+                  votacao.resultado === "aprovada"
+                    ? "success"
+                    : votacao.resultado === "reprovada"
+                    ? "danger"
+                    : "warning"
+                }
+              >
+                {votacao.resultado === "aprovada"
+                  ? "Aprovada"
+                  : votacao.resultado === "reprovada"
+                  ? "Reprovada"
+                  : "Em Andamento"}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Botão de finalização para administradores */}
+          {isAdmin &&
+            votacao.resultado === "em_andamento" &&
+            votacao.total_votos === 12 && (
+              <div>
+                {confirmandoFinalizacao ? (
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmandoFinalizacao(false)}
+                      disabled={finalizando}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleFinalizar}
+                      disabled={finalizando}
+                    >
+                      {finalizando ? "Finalizando..." : "Confirmar"}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setConfirmandoFinalizacao(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Flag className="mr-1 h-4 w-4" />
+                    Finalizar Votação
+                  </Button>
+                )}
+              </div>
+            )}
         </div>
       </div>
 

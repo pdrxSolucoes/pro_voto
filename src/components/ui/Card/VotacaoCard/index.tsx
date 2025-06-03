@@ -27,6 +27,10 @@ export function VotacaoCard({
       onSelect(votacao.id);
     }
   };
+  console.log("📋 Votação:", votacao.votosRegistrados);
+  // Verifica se a votação atingiu 12 votos para mostrar um indicador visual
+  const atingiuTotalVotos = votacao.votosRegistrados === 12;
+  console.log("📋 Votação: a", atingiuTotalVotos);
 
   return (
     <Card
@@ -40,9 +44,21 @@ export function VotacaoCard({
           <h3 className="text-lg font-bold text-gray-800">
             {votacao.projetoTitulo}
           </h3>
-          <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-            Em Votação
-          </Badge>
+          {atingiuTotalVotos ? (
+            <Badge
+              variant="default"
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              Aguardando Finalização
+            </Badge>
+          ) : (
+            <Badge
+              variant="default"
+              className="bg-green-500 hover:bg-green-600"
+            >
+              Em Votação
+            </Badge>
+          )}
         </div>
         <div className="text-sm text-gray-600 mt-1">
           Iniciada em {votacao.dataInicio}
@@ -95,8 +111,15 @@ export function VotacaoCard({
             </Button>
           ) : (
             <Link href={`/votacao/tempo-real?id=${votacao.id}`}>
-              <Button variant="primary" className="px-4 py-2">
-                Participar
+              <Button
+                variant={atingiuTotalVotos ? "secondary" : "primary"}
+                className={`px-4 py-2 ${
+                  atingiuTotalVotos
+                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                    : ""
+                }`}
+              >
+                {atingiuTotalVotos ? "Ver Resultado" : "Participar"}
               </Button>
             </Link>
           )}
