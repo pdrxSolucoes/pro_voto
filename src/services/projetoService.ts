@@ -1,5 +1,5 @@
 // src/services/projetoService.ts
-import api from "./api";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface Projeto {
   id: number;
@@ -11,21 +11,42 @@ export interface Projeto {
 
 export const projetoService = {
   async getProjetos(): Promise<Projeto[]> {
-    const { data } = await api.get("/projetos");
-    return data.data;
+    const { data, error } = await supabase.from("projetos").select("*");
+    if (error) throw error;
+    return data || [];
   },
 
   async createProjeto(
     projeto: Omit<Projeto, "id" | "data_apresentacao" | "status">
-  ) {
-    return api.post("/projetos", projeto);
+  ): Promise<Projeto> {
+    const { data, error } = await supabase
+      .from("projetos")
+      .insert({
+        ...projeto,
+        data_apresentacao: new Date().toISOString(),
+      })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
-  async updateProjeto(id: number, projeto: Partial<Projeto>) {
-    return api.put(`/projetos/${id}`, projeto);
+  async updateProjeto(id: number, projeto: Partial<Projeto>): Promise<Projeto> {
+    const { data, error } = await supabase
+      .from("projetos")
+      .update(projeto)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
-  async iniciarVotacao(id: number) {
-    return api.post(`/projetos/${id}/iniciar-votacao`);
+  async iniciarVotacao(id: number): Promise<void> {
+    const { error } = await supabase
+      .from("projetos")
+      .update({ status: "em_votacao" })
+      .eq("id", id);
+    if (error) throw error;
   },
 };

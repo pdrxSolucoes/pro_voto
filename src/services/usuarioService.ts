@@ -1,5 +1,5 @@
 // src/services/usuarioService.ts
-import api from "./api";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface Usuario {
   id: number;
@@ -12,44 +12,67 @@ export interface Usuario {
 
 export const usuarioService = {
   async getUsuarios(): Promise<Usuario[]> {
-    const { data } = await api.get("/usuarios");
-    return data.usuarios;
+    const { data, error } = await supabase.from("usuarios").select("*");
+    if (error) throw error;
+    return data || [];
   },
 
   async getUsuariosAtivos(): Promise<Usuario[]> {
-    const { data } = await api.get("/usuarios?ativo=true");
-    const usuarioAtivos = data.usuarios.filter(
-      (usuario: Usuario) => usuario.ativo === true
-    );
-    return usuarioAtivos;
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("ativo", true);
+    if (error) throw error;
+    return data || [];
   },
 
   async getUsuarioById(id: number): Promise<Usuario> {
-    const { data } = await api.get(`/usuarios/${id}`);
-    return data.data;
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async createUsuario(
     usuario: Omit<Usuario, "id"> & { senha: string }
   ): Promise<Usuario> {
-    const { data } = await api.post("/usuarios", usuario);
-    return data.usuarios;
+    const { data, error } = await supabase
+      .from("usuarios")
+      .insert(usuario)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async updateUsuario(
     id: number,
     usuario: Partial<Usuario> & { senha?: string }
   ): Promise<Usuario> {
-    const { data } = await api.put(`/usuarios/${id}`, usuario);
-    return data.usuarios;
+    const { data, error } = await supabase
+      .from("usuarios")
+      .update(usuario)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
   },
 
   async deleteUsuario(id: number): Promise<void> {
-    await api.delete(`/usuarios/${id}`);
+    const { error } = await supabase.from("usuarios").delete().eq("id", id);
+    if (error) throw error;
   },
 
   async contarUsuariosAtivos(): Promise<number> {
-    const usuarios = await this.getUsuariosAtivos();
-    return usuarios.length;
+    const { count, error } = await supabase
+      .from("usuarios")
+      .select("*", { count: "exact", head: true })
+      .eq("ativo", true);
+    if (error) throw error;
+    return count || 0;
   },
 };
