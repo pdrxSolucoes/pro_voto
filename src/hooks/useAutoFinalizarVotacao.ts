@@ -1,4 +1,4 @@
-import api from "@/services/api";
+import { supabase } from "@/lib/supabaseClient";
 import { useState, useEffect } from "react";
 
 /**
@@ -24,32 +24,51 @@ export function useAutoFinalizarVotacao(votacaoId?: number, intervalo = 10000) {
   // Verifica se há votações com 12 votos que precisam ser finalizadas
   const verificarVotacoes = async () => {
     try {
-      // Se um ID específico foi fornecido, verifica apenas essa votação
       if (votacaoId) {
-        const response = await api.get(`votacoes/${votacaoId}/resultado`);
-        const votacao = response.data.resultado;
+        const { data: votacao, error } = await supabase
+          .from("votacoes")
+          .select(`*, votos(*)`)
+          .eq("id", votacaoId)
+          .single();
 
-        // Se a votação tem exatamente 12 votos e ainda está em andamento
-        if (
-          votacao.total_votos === 12 &&
-          votacao.resultado === "em_andamento"
-        ) {
-          // Chama o endpoint para finalizar a votação
-          const finalizacaoResponse = await api.get("votacoes/check-status");
-          setLastResult(finalizacaoResponse.data);
-          return finalizacaoResponse.data;
+        if (error) throw error;
+
+        if (votacao.votos.length >= 12 && votacao.resultado === "em_andamento") {
+          // Finalizar votação
+          const votosFavor = votacao.votos.filter((v: any) => v.voto === "aprovar").length;
+          const votosContra = votacao.votos.filter((v: any) => v.voto === "desaprovar").length;
+          const resultado = votosFavor > votosContra ? "aprovada" : "reprovada";
+
+          await supabase
+            .from("votacoes")
+            .update({ 
+              resultado,
+              data_fim: new Date().toISOString(),
+              votos_favor: votosFavor,
+              votos_contra: votosContra,
+              abstencoes: votacao.votos.length - votosFavor - votosContra
+            })
+            .eq("id", votacaoId);
+
+          const result = { success: true, votacaoFinalizada: votacaoId, resultado };
+          setLastResult(result);
+          return result;
         }
-
         return null;
       } else {
-        // Verifica todas as votações em andamento
-        const response = await api.get("votacoes/check-status");
-        setLastResult(response.data);
-        return response.data;
+        const { data: votacoes, error } = await supabase
+          .from("votacoes")
+          .select(`*, votos(*)`)
+          .eq("resultado", "em_andamento");
+
+        if (error) throw error;
+
+        const result = { success: true, votacoesVerificadas: votacoes?.length || 0 };
+        setLastResult(result);
+        return result;
       }
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.error || "Erro ao verificar votações";
+      const errorMessage = err.message || "Erro ao verificar votações";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     }

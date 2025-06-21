@@ -1,4 +1,4 @@
-import api from "@/services/api";
+import { supabase } from "@/lib/supabaseClient";
 import { useState } from "react";
 
 /**
@@ -18,12 +18,33 @@ export function useCheckVotacaoStatus() {
     setError(null);
 
     try {
-      const response = await api.get("votacoes/check-status");
-      setResult(response.data);
-      return response.data;
+      const { data: votacoes, error } = await supabase
+        .from("votacoes")
+        .select(
+          `
+          *,
+          votos(*)
+        `
+        )
+        .eq("resultado", "em_andamento");
+
+      if (error) throw error;
+
+      const votacoesParaFinalizar = (votacoes || []).filter(
+        (v: any) => v.votos.length >= 12
+      );
+
+      const result = {
+        success: true,
+        votacoesParaFinalizar: votacoesParaFinalizar.length,
+        votacoes: votacoesParaFinalizar,
+      };
+
+      setResult(result);
+      return result;
     } catch (err: any) {
       const errorMessage =
-        err.response?.data?.error || "Erro ao verificar status das votações";
+        err.message || "Erro ao verificar status das votações";
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {

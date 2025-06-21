@@ -203,14 +203,16 @@ function VotacaoRealTimeContent() {
       
       if (resultado && resultado.success) {
         console.log("✅ Votação finalizada com sucesso:", resultado);
+        const resultadoMsg = 'resultado' in resultado ? resultado.resultado : 'finalizada';
         addNotification(
-          `Votação finalizada com sucesso! Resultado: ${resultado.resultado}`,
+          `Votação finalizada com sucesso! Resultado: ${resultadoMsg}`,
           "success"
         );
       } else {
         console.error("❌ Falha ao finalizar votação");
+        const errorMsg = resultado && 'error' in resultado ? resultado.error : "Erro desconhecido";
         addNotification(
-          `Falha ao finalizar votação: ${resultado?.error || "Erro desconhecido"}`,
+          `Falha ao finalizar votação: ${errorMsg}`,
           "error"
         );
       }

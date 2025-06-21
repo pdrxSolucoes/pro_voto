@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
-import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface Vereador {
   id: number;
@@ -55,25 +54,48 @@ export function useResultadoVotacao(votacaoId: number) {
       setError(null); // Limpar erro anterior
       console.log(`🔍 Buscando resultado da votação ${id}`);
 
-      const response = await axios.get(`/api/votacoes/${id}/resultado`);
+      const { data: votacao, error } = await supabase
+        .from("votacoes")
+        .select(`
+          *,
+          projetos(*),
+          votos(*, usuarios(nome))
+        `)
+        .eq("id", id)
+        .single();
 
-      console.log("📊 Resposta da API:", response.data);
+      if (error) throw error;
+      if (!votacao) throw new Error("Votação não encontrada");
 
-      // Verificar se a resposta tem a estrutura esperada
-      if (!response.data) {
-        throw new Error("Resposta da API está vazia");
-      }
+      const votos = votacao.votos || [];
+      const votosFavor = votos.filter((v: any) => v.voto === "aprovar").length;
+      const votosContra = votos.filter((v: any) => v.voto === "desaprovar").length;
+      const abstencoes = votos.filter((v: any) => v.voto === "abster").length;
 
-      if (!response.data.success) {
-        throw new Error(response.data.error || "Erro na API");
-      }
+      const dadosResultado = {
+        id: votacao.id,
+        projeto: votacao.projetos,
+        data_inicio: votacao.data_inicio,
+        data_fim: votacao.data_fim,
+        resultado: votacao.resultado,
+        votosFavor,
+        votosContra,
+        abstencoes,
+        vereadores: votos.map((v: any) => ({
+          id: v.usuarios.id,
+          nome: v.usuarios.nome,
+          voto: v.voto,
+          data_voto: v.created_at
+        })),
+        total_vereadores: 12,
+        total_votos: votos.length
+      };
 
-      if (!response.data.resultado) {
-        throw new Error("Dados do resultado não encontrados na resposta");
-      }
-
-      const dadosResultado = response.data.resultado;
-      const dadosUltimoVoto = response.data.ultimo_voto || null;
+      const dadosUltimoVoto = votos.length > 0 ? {
+        vereador: votos[votos.length - 1].usuarios.nome,
+        voto: votos[votos.length - 1].voto,
+        data: votos[votos.length - 1].created_at
+      } : null;
 
       console.log("✅ Dados processados:", {
         resultado: dadosResultado,
@@ -86,20 +108,7 @@ export function useResultadoVotacao(votacaoId: number) {
     } catch (err) {
       console.error("❌ Erro ao buscar resultado da votação:", err);
 
-      // Tratamento de erro mais específico
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 404) {
-          setError(new Error("Votação não encontrada"));
-        } else if (err.response?.status === 401) {
-          setError(new Error("Não autorizado - faça login novamente"));
-        } else {
-          setError(
-            new Error(
-              err.response?.data?.error || "Erro na comunicação com o servidor"
-            )
-          );
-        }
-      } else if (err instanceof Error) {
+      if (err instanceof Error) {
         setError(err);
       } else {
         setError(new Error("Erro desconhecido"));
@@ -184,40 +193,35 @@ export function useRegistrarVoto() {
 
     try {
       console.log(`🗳️ Registrando voto:`, { votacaoId, vereadorId, voto });
-      const response = await api.post(`votacoes/${votacaoId}/votar`, {
-        vereadorId,
-        voto,
-      });
+      
+      const { data, error } = await supabase
+        .from("votos")
+        .insert({
+          votacao_id: votacaoId,
+          usuario_id: vereadorId,
+          voto
+        })
+        .select()
+        .single();
 
-      console.log("✅ Voto registrado com sucesso:", response.data);
-
-      if (!response.data.success) {
-        throw new Error(response.data.error || "Erro ao registrar voto");
-      }
+      if (error) throw error;
+      console.log("✅ Voto registrado com sucesso:", data);
 
       setSuccess(true);
       return true;
     } catch (err) {
       console.error("❌ Erro ao registrar voto:", err);
 
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 400) {
-          setError(new Error(err.response.data?.error || "Dados inválidos"));
-        } else if (err.response?.status === 401) {
-          setError(new Error("Não autorizado - faça login novamente"));
-        } else if (err.response?.status === 409) {
+      if (err instanceof Error) {
+        if (err.message.includes('duplicate')) {
           setError(new Error("Você já votou nesta votação"));
         } else {
-          setError(
-            new Error(err.response?.data?.error || "Erro ao registrar voto")
-          );
+          setError(err);
         }
-        return false;
-      } else if (err instanceof Error) {
-        setError(err);
       } else {
         setError(new Error("Erro desconhecido ao registrar voto"));
       }
+      return false;
     } finally {
       setLoading(false);
     }

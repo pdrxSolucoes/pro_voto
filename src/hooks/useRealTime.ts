@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface Notification {
   id: string;
@@ -64,21 +65,50 @@ export function useRealTimeData<T>(
     fetchData();
   }, [fetchData]);
 
-  // Efeito para buscar dados iniciais e configurar o intervalo
+  // Efeito para buscar dados iniciais e configurar real-time
   useEffect(() => {
     // Buscar dados imediatamente
     fetchData();
 
-    // Configurar intervalo para atualizações automáticas
+    // Configurar real-time subscription para votações
+    const channel = supabase
+      .channel('votacoes-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'votos'
+        },
+        () => {
+          console.log('🔄 Novo voto detectado, atualizando dados...');
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'votacoes'
+        },
+        () => {
+          console.log('🔄 Mudança na votação detectada, atualizando dados...');
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    // Fallback: intervalo para garantir atualizações
     const intervalId = setInterval(() => {
-      // Só atualizar se não estiver em loading
       if (!loading) {
         fetchData();
       }
     }, interval);
 
-    // Limpar intervalo quando o componente for desmontado ou dependências mudarem
+    // Limpar subscription e intervalo
     return () => {
+      supabase.removeChannel(channel);
       clearInterval(intervalId);
     };
   }, [...dependencies, interval]);

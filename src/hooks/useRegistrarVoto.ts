@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import { supabase } from "@/lib/supabaseClient";
 
 // Hook para registrar voto
 export function useRegistrarVoto() {
@@ -19,16 +19,18 @@ export function useRegistrarVoto() {
     try {
       console.log(`🗳️ Registrando voto:`, { votacaoId, vereadorId, voto });
 
-      const response = await axios.post(`/api/votacoes/${votacaoId}/votar`, {
-        vereadorId,
-        voto,
-      });
+      const { data, error } = await supabase
+        .from("votos")
+        .insert({
+          votacao_id: votacaoId,
+          usuario_id: vereadorId,
+          voto
+        })
+        .select()
+        .single();
 
-      console.log("✅ Resposta do servidor:", response.data);
-
-      if (!response.data || !response.data.success) {
-        throw new Error(response.data?.error || "Erro ao registrar voto");
-      }
+      if (error) throw error;
+      console.log("✅ Voto registrado:", data);
 
       setSuccess(true);
       console.log("✅ Voto registrado com sucesso");
@@ -36,22 +38,12 @@ export function useRegistrarVoto() {
     } catch (err) {
       console.error("❌ Erro ao registrar voto:", err);
 
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 400) {
-          setError(new Error(err.response.data?.error || "Dados inválidos"));
-        } else if (err.response?.status === 401) {
-          setError(new Error("Não autorizado - faça login novamente"));
-        } else if (err.response?.status === 409) {
+      if (err instanceof Error) {
+        if (err.message.includes('duplicate')) {
           setError(new Error("Você já votou nesta votação"));
-        } else if (err.response?.status === 404) {
-          setError(new Error("Votação não encontrada"));
         } else {
-          setError(
-            new Error(err.response?.data?.error || "Erro ao registrar voto")
-          );
+          setError(err);
         }
-      } else if (err instanceof Error) {
-        setError(err);
       } else {
         setError(new Error("Erro desconhecido ao registrar voto"));
       }
