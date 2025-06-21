@@ -16,6 +16,10 @@
     "migrations:run": "ts-node --transpile-only src/server/cli/runMigrations.ts"
   },
   "type": "commonjs",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",
     "@types/react": "^18.2.17",
