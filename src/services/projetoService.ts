@@ -1,5 +1,5 @@
 // src/services/projetoService.ts
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "./supabase";
 
 export interface Projeto {
   id: number;

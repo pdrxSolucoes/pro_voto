@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/Button";
+import { authService } from "@/services/authService";
 
 export default function LoginForm() {
   const [email, setEmail] = useState("");
@@ -18,21 +19,7 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao fazer login");
-      }
-
-      // Redirect to home page or dashboard
+      await authService.login({ email, password });
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao fazer login");

@@ -1,46 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { RootLayout } from "@/components/Layout";
 import { Button } from "@/components/ui/Button";
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { ProjetoCard } from "@/components/ui/Card/ProjetoCard";
 import { ProjetoFormModal } from "@/components/ui/Modal/ModalProjeto";
 import { useNotifications } from "@/contexts/NotificationContext";
-
-interface Projeto {
-  id: number;
-  titulo: string;
-  descricao: string;
-  data_apresentacao: string;
-  status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
-}
-
-const api = axios.create({
-  baseURL: "/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 10000,
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(error)
-);
+import { projetoService, type Projeto } from "@/services/projetoService";
 
 function ProjetosContent() {
   const [projetos, setProjetos] = useState<Projeto[]>([]);
@@ -68,43 +36,14 @@ function ProjetosContent() {
   async function carregarProjetos() {
     try {
       setLoading(true);
-
-      const token = localStorage.getItem("authToken");
-      if (!token) throw new Error("Usuário não autenticado");
-
-      const response = await api.get("/projetos");
-      setProjetos(response.data.data);
+      const projetos = await projetoService.getProjetos();
+      setProjetos(projetos);
       setError(null);
     } catch (err) {
       console.error("Erro ao carregar projetos:", err);
-
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 401) {
-          addNotification("Sessão expirada. Faça login novamente.", "error");
-          setError(new Error("Sessão expirada. Faça login novamente."));
-          localStorage.removeItem("authToken");
-          router.push("/login");
-          return;
-        }
-
-        if (err.code === "ECONNABORTED" || !err.response) {
-          const msg =
-            "Erro de conexão com o servidor. Verifique se o servidor da API está em execução.";
-          setError(new Error(msg));
-          addNotification(msg, "error");
-        } else {
-          const msg =
-            err.response?.data?.error ||
-            `Erro ao carregar projetos: ${err.message}`;
-          setError(new Error(msg));
-          addNotification(msg, "error");
-        }
-      } else {
-        setError(
-          err instanceof Error ? err : new Error("Erro ao carregar projetos")
-        );
-        addNotification("Erro ao carregar projetos", "error");
-      }
+      const errorMsg = err instanceof Error ? err.message : "Erro ao carregar projetos";
+      setError(new Error(errorMsg));
+      addNotification(errorMsg, "error");
     } finally {
       setLoading(false);
     }
@@ -112,27 +51,13 @@ function ProjetosContent() {
 
   const handleIniciarVotacao = async (id: number) => {
     try {
-      await api.post(`/projetos/${id}/iniciar-votacao`);
+      await projetoService.iniciarVotacao(id);
       await carregarProjetos();
       addNotification(`Votação iniciada para o projeto #${id}`, "success");
     } catch (err) {
       console.error("Erro ao iniciar votação:", err);
-
-      if (axios.isAxiosError(err)) {
-        if (err.code === "ECONNABORTED" || !err.response) {
-          addNotification(
-            "Erro de conexão com o servidor. Verifique se o servidor da API está em execução.",
-            "error"
-          );
-        } else {
-          const msg =
-            err.response?.data?.error ||
-            `Erro ao iniciar votação: ${err.message}`;
-          addNotification(msg, "error");
-        }
-      } else {
-        addNotification("Erro ao iniciar votação", "error");
-      }
+      const errorMsg = err instanceof Error ? err.message : "Erro ao iniciar votação";
+      addNotification(errorMsg, "error");
     }
   };
 
@@ -158,10 +83,10 @@ function ProjetosContent() {
 
     try {
       if (isEditMode) {
-        await api.put(`/projetos/${projetoEmEdicao!.id}`, projetoData);
+        await projetoService.updateProjeto(projetoEmEdicao!.id, projetoData);
         addNotification("Projeto atualizado com sucesso!", "success");
       } else {
-        await api.post("/projetos", {
+        await projetoService.createProjeto({
           titulo: projetoData.titulo,
           descricao: projetoData.descricao,
         });
@@ -175,36 +100,9 @@ function ProjetosContent() {
         `Erro ao ${isEditMode ? "atualizar" : "criar"} projeto:`,
         err
       );
-
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 401) {
-          addNotification("Sessão expirada. Faça login novamente.", "error");
-          localStorage.removeItem("authToken");
-          router.push("/login");
-          return;
-        }
-
-        if (err.code === "ECONNABORTED" || !err.response) {
-          const msg =
-            "Erro de conexão com o servidor. Verifique se o servidor da API está em execução.";
-          addNotification(msg, "error");
-          throw new Error(msg);
-        } else {
-          const msg =
-            err.response?.data?.error ||
-            `Erro ao ${isEditMode ? "atualizar" : "criar"} projeto: ${
-              err.message
-            }`;
-          addNotification(msg, "error");
-          throw new Error(msg);
-        }
-      } else {
-        addNotification(
-          `Erro ao ${isEditMode ? "atualizar" : "criar"} projeto`,
-          "error"
-        );
-        throw err;
-      }
+      const errorMsg = err instanceof Error ? err.message : `Erro ao ${isEditMode ? "atualizar" : "criar"} projeto`;
+      addNotification(errorMsg, "error");
+      throw err;
     }
   };
 

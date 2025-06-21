@@ -7,10 +7,9 @@ import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
-import axios from "axios";
 import { dashboardService } from "@/services/dashboardService";
 import { votacaoService } from "@/services/votacaoService";
-
+import { setupService } from "@/services/setupService";
 import Image from "next/image";
 import { VotacaoCard } from "@/components/ui/Card/VotacaoCard";
 
@@ -40,33 +39,27 @@ function HomePageContent() {
   useEffect(() => {
     const checkSetup = async () => {
       try {
-        // Verificar se existe algum administrador no sistema
-        const response = await axios.get("/api/auth/setup");
+        const { hasAdmin } = await setupService.checkSetup();
 
-        // Se não houver admin, redirecionar para página de setup
-        if (!response.data.hasAdmin) {
+        if (!hasAdmin) {
           router.push("/setup");
           return;
         }
 
-        // Se estiver autenticado, redirecionar para dashboard
         if (isAuthenticated) {
           router.push("/");
           return;
         }
 
-        // Se não estiver autenticado e houver admin, redirecionar para login
         router.push("/login");
       } catch (error) {
         console.error("Erro ao verificar configuração:", error);
-        // Em caso de erro, tentar ir para login de qualquer forma
         router.push("/login");
       } finally {
         setLoadingHome(false);
       }
     };
 
-    // Só executa a verificação quando o estado de autenticação for conhecido
     if (!authLoading) {
       checkSetup();
     }

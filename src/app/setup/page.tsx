@@ -3,7 +3,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
+import { setupService } from "@/services/setupService";
+import { authService } from "@/services/authService";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -17,28 +19,36 @@ export default function SetupPage() {
   const [confirmSenha, setConfirmSenha] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   // Verificar se já existe um admin
   useEffect(() => {
     const checkSetup = async () => {
       try {
-        const response = await axios.get("/api/auth/setup");
-        setHasAdmin(response.data.hasAdmin);
-
-        // Se já existir um admin, redirecione para a página de login após um breve delay
-        if (response.data.hasAdmin) {
-          setTimeout(() => {
-            router.push("/login");
-          }, 3000);
+        const { hasAdmin } = await setupService.checkSetup();
+        setHasAdmin(hasAdmin);
+        if (!hasAdmin) {
+          router.push("/setup");
+          return;
         }
+
+        if (isAuthenticated) {
+          router.push("/");
+          return;
+        }
+
+        router.push("/login");
       } catch (error) {
-        setError("Erro ao verificar configuração do sistema");
+        console.error("Erro ao verificar configuração:", error);
+        router.push("/login");
       } finally {
         setLoading(false);
       }
     };
 
-    checkSetup();
+    if (!authLoading) {
+      checkSetup();
+    }
   }, [router]);
 
   // Função para criar o primeiro admin
@@ -54,20 +64,13 @@ export default function SetupPage() {
     setSubmitting(true);
 
     try {
-      const response = await axios.post("/api/auth/setup", {
-        nome,
-        email,
-        senha,
-      });
-
-      if (response.data.success) {
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/login");
-        }, 3000);
-      }
+      await authService.setup({ nome, email, senha });
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
     } catch (error: any) {
-      setError(error.response?.data?.error || "Erro ao criar administrador");
+      setError(error.message || "Erro ao criar administrador");
     } finally {
       setSubmitting(false);
     }

@@ -26,8 +26,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, senha);
-      router.push("/"); // Redireciona após login bem-sucedido
+      const result = await login(email, senha);
+      if (result.success) {
+        router.push("/"); // Redireciona após login bem-sucedido
+      } else {
+        setError(result.error || "Falha no login. Verifique suas credenciais.");
+      }
     } catch (err: any) {
       setError(
         err.response?.data?.error ||

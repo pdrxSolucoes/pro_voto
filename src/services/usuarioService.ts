@@ -1,5 +1,5 @@
 // src/services/usuarioService.ts
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "./supabase";
 
 export interface Usuario {
   id: number;

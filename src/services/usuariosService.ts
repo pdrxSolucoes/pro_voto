@@ -1,5 +1,4 @@
-import { api } from "@/lib/api";
-import axios from "axios";
+import { supabase } from "./supabase";
 
 // Interface para criação de usuário
 export interface CriarUsuarioData {
@@ -13,36 +12,59 @@ export interface CriarUsuarioData {
 export const usuariosService = {
   getAll: async () => {
     try {
-      const response = await api.get("/usuarios");
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('*');
+      
+      if (error) throw error;
+      
       return {
         success: true,
-        data: response.data.usuarios,
+        data: data || [],
       };
     } catch (error) {
       console.error("Erro ao buscar usuários:", error);
       return {
         success: false,
-        error: axios.isAxiosError(error)
-          ? error.response?.data?.error || "Erro ao buscar usuários"
-          : "Erro ao buscar usuários",
+        error: "Erro ao buscar usuários",
       };
     }
   },
 
   create: async (data: CriarUsuarioData) => {
     try {
-      const response = await api.post("/usuarios", data);
+      // Criar usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.senha,
+      });
+      
+      if (authError) throw authError;
+      
+      // Criar registro na tabela usuarios
+      const { data: userData, error: userError } = await supabase
+        .from('usuarios')
+        .insert({
+          nome: data.nome,
+          email: data.email,
+          cargo: data.cargo,
+          ativo: true,
+          senha: "supabase_auth", // Placeholder, senha real gerenciada pelo Supabase Auth
+        })
+        .select()
+        .single();
+      
+      if (userError) throw userError;
+      
       return {
         success: true,
-        data: response.data.usuario,
+        data: userData,
       };
     } catch (error) {
       console.error("Erro ao criar usuário:", error);
       return {
         success: false,
-        error: axios.isAxiosError(error)
-          ? error.response?.data?.error || "Erro ao criar usuário"
-          : "Erro ao criar usuário",
+        error: "Erro ao criar usuário",
       };
     }
   },
