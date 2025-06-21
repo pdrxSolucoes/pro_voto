@@ -12,7 +12,8 @@ export const AppDataSource = new DataSource({
   username: process.env.DATABASE_USER || "vere_voto",
   password: process.env.DATABASE_PASSWORD || "vere_voto234",
   database: process.env.DATABASE_NAME || "vere_voto_db",
-  synchronize: process.env.NODE_ENV !== "production", // Não use synchronize em produção
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
+  synchronize: process.env.NODE_ENV !== "production",
   logging: process.env.NODE_ENV !== "production",
   entities: [Usuario, Projeto, Votacao, Voto],
   migrations: ["./migrations/*.ts"],
