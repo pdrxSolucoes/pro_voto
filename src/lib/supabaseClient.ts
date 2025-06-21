@@ -9,6 +9,7 @@ if (typeof window !== "undefined" && (!supabaseUrl || !supabaseAnonKey)) {
 }
 
 // Use fallback values during build to prevent errors
+//vercel config
 const url = supabaseUrl || "https://rrgfncqdsrmhziwhziqy.supabase.co";
 const key =
   supabaseAnonKey ||
