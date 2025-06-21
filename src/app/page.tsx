@@ -12,14 +12,7 @@ import { votacaoService } from "@/services/votacaoService";
 import { setupService } from "@/services/setupService";
 import Image from "next/image";
 import { VotacaoCard } from "@/components/ui/Card/VotacaoCard";
-
-interface VotacaoAtiva {
-  id: number;
-  projetoTitulo: string;
-  dataInicio: string;
-  votosRegistrados: number;
-  totalVereadores: number;
-}
+import { type VotacaoAtiva } from "@/services/votacaoService";
 
 interface HomeContent {
   projetosPendentes: number;
