@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { usuariosService } from "@/services/usuariosService";
+import { usuariosService } from "@/services/usuarioService";
 
 export default function CriarUsuarioPage() {
   const router = useRouter();
