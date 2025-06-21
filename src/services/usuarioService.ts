@@ -1,5 +1,4 @@
-// src/services/usuarioService.ts
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface Usuario {
   id: number;
@@ -8,6 +7,13 @@ export interface Usuario {
   cargo: "admin" | "vereador";
   ativo?: boolean;
   data_criacao: Date;
+}
+
+export interface CriarUsuarioData {
+  nome: string;
+  email: string;
+  senha: string;
+  cargo: "vereador" | "admin";
 }
 
 export const usuarioService = {
@@ -39,9 +45,23 @@ export const usuarioService = {
   async createUsuario(
     usuario: Omit<Usuario, "id"> & { senha: string }
   ): Promise<Usuario> {
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: usuario.email,
+      password: usuario.senha,
+    });
+    
+    if (authError) throw authError;
+    
     const { data, error } = await supabase
       .from("usuarios")
-      .insert(usuario)
+      .insert({
+        nome: usuario.nome,
+        email: usuario.email,
+        cargo: usuario.cargo,
+        ativo: usuario.ativo ?? true,
+        senha: "supabase_auth",
+        data_criacao: usuario.data_criacao || new Date(),
+      })
       .select()
       .single();
     if (error) throw error;
@@ -75,4 +95,31 @@ export const usuarioService = {
     if (error) throw error;
     return count || 0;
   },
+
+  // Métodos com formato de resposta padronizado
+  getAll: async () => {
+    try {
+      const data = await usuarioService.getUsuarios();
+      return { success: true, data };
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+      return { success: false, error: "Erro ao buscar usuários" };
+    }
+  },
+
+  create: async (data: CriarUsuarioData) => {
+    try {
+      const usuario = await usuarioService.createUsuario({
+        ...data,
+        data_criacao: new Date(),
+      });
+      return { success: true, data: usuario };
+    } catch (error) {
+      console.error("Erro ao criar usuário:", error);
+      return { success: false, error: "Erro ao criar usuário" };
+    }
+  },
 };
+
+// Manter compatibilidade com imports antigos
+export const usuariosService = usuarioService;

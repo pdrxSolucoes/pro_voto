@@ -1,67 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
 import { RootLayout } from "@/components/Layout";
 import { Button } from "@/components/ui/Button";
-
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { useNotifications } from "@/contexts/NotificationContext";
-
-interface Projeto {
-  id: number;
-  titulo: string;
-  descricao: string;
-  data_apresentacao: string;
-  status: "pendente" | "em_votacao" | "aprovada" | "reprovada";
-  votacoes?: Votacao[];
-}
-
-interface Votacao {
-  id: number;
-  dataInicio: string;
-  dataFim: string | null;
-  data_criacao: string;
-  data_atualizacao: string;
-  resultado: "aprovada" | "reprovada" | "empate" | null;
-  votosFavor: number;
-  votosContra: number;
-  abstencoes: number;
-  votos: Voto[];
-}
-
-interface Voto {
-  id: number;
-  voto: "aprovar" | "reprovar" | "abster";
-  vereadorId: number;
-  votacaoId: number;
-  dataVoto: string;
-}
-
-const api = axios.create({
-  baseURL: "/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  timeout: 10000,
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => Promise.reject(error)
-);
+import { projetoService, type Projeto, type Votacao, type Voto } from "@/services/projetoService";
 
 function ProjetoDetalhesContent({ id }: { id: string }) {
   const [projeto, setProjeto] = useState<Projeto | null>(null);
@@ -71,57 +17,42 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
   const { isAdmin, user, loading: authLoading } = useAuth();
   const { addNotification } = useNotifications();
   const router = useRouter();
-  console.log(projeto?.votacoes);
+
   useEffect(() => {
+    console.log("🔍 Auth Debug:", { authLoading, user: user?.nome || null });
+    
     if (!authLoading) {
       if (!user) {
+        console.log("❌ Usuário não autenticado, redirecionando...");
         router.push("/login");
       } else {
+        console.log("✅ Usuário autenticado, carregando projeto...");
         carregarProjeto();
       }
+    } else {
+      console.log("⏳ Aguardando autenticação...");
     }
   }, [user, authLoading, router]);
 
   async function carregarProjeto() {
+    if (!user) {
+      console.log("⚠️ Tentativa de carregar projeto sem usuário autenticado");
+      return;
+    }
+    
     try {
       setLoading(true);
-
-      const token = localStorage.getItem("authToken");
-      if (!token) throw new Error("Usuário não autenticado");
-
-      const response = await api.get(`/projetos/${id}`);
-      setProjeto(response.data);
+      console.log("📄 Carregando projeto ID:", id);
+      const projeto = await projetoService.getProjetoById(parseInt(id));
+      setProjeto(projeto);
       setError(null);
+      console.log("✅ Projeto carregado com sucesso:", projeto.titulo);
     } catch (err) {
-      console.error("Erro ao carregar projeto:", err);
-
-      if (axios.isAxiosError(err)) {
-        if (err.response?.status === 401) {
-          addNotification("Sessão expirada. Faça login novamente.", "error");
-          setError(new Error("Sessão expirada. Faça login novamente."));
-          localStorage.removeItem("authToken");
-          router.push("/login");
-          return;
-        }
-
-        if (err.code === "ECONNABORTED" || !err.response) {
-          const msg =
-            "Erro de conexão com o servidor. Verifique se o servidor da API está em execução.";
-          setError(new Error(msg));
-          addNotification(msg, "error");
-        } else {
-          const msg =
-            err.response?.data?.error ||
-            `Erro ao carregar projeto: ${err.message}`;
-          setError(new Error(msg));
-          addNotification(msg, "error");
-        }
-      } else {
-        setError(
-          err instanceof Error ? err : new Error("Erro ao carregar projeto")
-        );
-        addNotification("Erro ao carregar projeto", "error");
-      }
+      console.error("❌ Erro ao carregar projeto:", err);
+      const msg =
+        err instanceof Error ? err.message : "Erro ao carregar projeto";
+      setError(new Error(msg));
+      addNotification(msg, "error");
     } finally {
       setLoading(false);
     }
@@ -129,27 +60,14 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
 
   const handleIniciarVotacao = async () => {
     try {
-      await api.post(`/projetos/${id}/iniciar-votacao`);
+      await projetoService.iniciarVotacao(parseInt(id));
       await carregarProjeto();
       addNotification(`Votação iniciada para o projeto #${id}`, "success");
     } catch (err) {
       console.error("Erro ao iniciar votação:", err);
-
-      if (axios.isAxiosError(err)) {
-        if (err.code === "ECONNABORTED" || !err.response) {
-          addNotification(
-            "Erro de conexão com o servidor. Verifique se o servidor da API está em execução.",
-            "error"
-          );
-        } else {
-          const msg =
-            err.response?.data?.error ||
-            `Erro ao iniciar votação: ${err.message}`;
-          addNotification(msg, "error");
-        }
-      } else {
-        addNotification("Erro ao iniciar votação", "error");
-      }
+      const msg =
+        err instanceof Error ? err.message : "Erro ao iniciar votação";
+      addNotification(msg, "error");
     }
   };
 
@@ -193,14 +111,12 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
   useEffect(() => {
     const carregarVereadores = async () => {
       try {
-        const response = await api.get("/usuarios");
-        if (response.data.success) {
-          const vereadoresMap: { [key: number]: string } = {};
-          response.data.usuarios.forEach((usuario: any) => {
-            vereadoresMap[usuario.id] = usuario.nome;
-          });
-          setVereadores(vereadoresMap);
-        }
+        const usuarios = await projetoService.getUsuarios();
+        const vereadoresMap: { [key: number]: string } = {};
+        usuarios.forEach((usuario) => {
+          vereadoresMap[usuario.id] = usuario.nome;
+        });
+        setVereadores(vereadoresMap);
       } catch (error) {
         console.error("Erro ao carregar vereadores:", error);
       }

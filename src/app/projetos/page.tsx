@@ -41,7 +41,8 @@ function ProjetosContent() {
       setError(null);
     } catch (err) {
       console.error("Erro ao carregar projetos:", err);
-      const errorMsg = err instanceof Error ? err.message : "Erro ao carregar projetos";
+      const errorMsg =
+        err instanceof Error ? err.message : "Erro ao carregar projetos";
       setError(new Error(errorMsg));
       addNotification(errorMsg, "error");
     } finally {
@@ -56,7 +57,8 @@ function ProjetosContent() {
       addNotification(`Votação iniciada para o projeto #${id}`, "success");
     } catch (err) {
       console.error("Erro ao iniciar votação:", err);
-      const errorMsg = err instanceof Error ? err.message : "Erro ao iniciar votação";
+      const errorMsg =
+        err instanceof Error ? err.message : "Erro ao iniciar votação";
       addNotification(errorMsg, "error");
     }
   };
@@ -100,7 +102,10 @@ function ProjetosContent() {
         `Erro ao ${isEditMode ? "atualizar" : "criar"} projeto:`,
         err
       );
-      const errorMsg = err instanceof Error ? err.message : `Erro ao ${isEditMode ? "atualizar" : "criar"} projeto`;
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : `Erro ao ${isEditMode ? "atualizar" : "criar"} projeto`;
       addNotification(errorMsg, "error");
       throw err;
     }

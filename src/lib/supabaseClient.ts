@@ -6,19 +6,13 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOi
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true
-  },
-  global: {
-    headers: {
-      'apikey': supabaseAnonKey,
-      'Authorization': `Bearer ${supabaseAnonKey}`
-    }
+    autoRefreshToken: true
   }
 });
 
-// Log para debug (apenas em desenvolvimento)
-if (process.env.NODE_ENV === 'development') {
-  console.log('Supabase URL:', supabaseUrl);
-  console.log('Supabase Key:', supabaseAnonKey ? 'Configurada' : 'Não configurada');
-}
+// Debug logs
+console.log('🔧 Supabase Config:', {
+  url: supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  keyLength: supabaseAnonKey?.length || 0
+});

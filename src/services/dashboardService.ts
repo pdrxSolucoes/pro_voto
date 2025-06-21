@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
-import { Projeto } from "./projetoService";
+import type { Projeto } from "./projetoService";
 
-export interface VotacaoAtiva {
+export interface DashboardVotacaoAtiva {
   id: number;
   projetoTitulo: string;
   dataInicio: string;
@@ -13,31 +13,27 @@ export interface HomeContent {
   projetosPendentes: number;
   projetosAprovadas: number;
   projetosReprovadas: number;
-  votacoesAtivas: VotacaoAtiva[];
+  votacoesAtivas: DashboardVotacaoAtiva[];
 }
 
 export const dashboardService = {
   async getDashboardData(): Promise<HomeContent> {
-    // Buscar todos os projetos
     const { data: projetos, error } = await supabase
       .from("projetos")
       .select("*");
 
     if (error) throw error;
 
-    // Buscar informações de votação para projetos em votação
     const votacoesAtivas = await Promise.all(
       (projetos || [])
         .filter((p: Projeto) => p.status === "em_votacao")
         .map(async (p: Projeto) => {
           try {
-            // Buscar contagem de votos
             const { count: votosRegistrados } = await supabase
               .from("votos")
               .select("*", { count: "exact", head: true })
               .eq("projeto_id", p.id);
 
-            // Buscar total de vereadores
             const { count: totalVereadores } = await supabase
               .from("usuarios")
               .select("*", { count: "exact", head: true })

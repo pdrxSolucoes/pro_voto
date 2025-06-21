@@ -2,14 +2,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
-
-interface VotacaoAtiva {
-  id: number;
-  projetoTitulo: string;
-  dataInicio: string;
-  votosRegistrados: number;
-  totalVereadores: number;
-}
+import { type VotacaoAtiva } from "@/services/votacaoService";
 
 interface VotacaoCardProps {
   votacao: VotacaoAtiva;
@@ -27,10 +20,8 @@ export function VotacaoCard({
       onSelect(votacao.id);
     }
   };
-  console.log("📋 Votação:", votacao.votosRegistrados);
   // Verifica se a votação atingiu 12 votos para mostrar um indicador visual
-  const atingiuTotalVotos = votacao.votosRegistrados === 12;
-  console.log("📋 Votação: a", atingiuTotalVotos);
+  const atingiuTotalVotos = false;
 
   return (
     <Card
@@ -42,7 +33,7 @@ export function VotacaoCard({
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b">
         <div className="flex justify-between items-start">
           <h3 className="text-lg font-bold text-gray-800">
-            {votacao.projetoTitulo}
+            {votacao.projetos?.titulo || `Projeto #${votacao.projeto_id}`}
           </h3>
           {atingiuTotalVotos ? (
             <Badge
@@ -61,7 +52,7 @@ export function VotacaoCard({
           )}
         </div>
         <div className="text-sm text-gray-600 mt-1">
-          Iniciada em {votacao.dataInicio}
+          Iniciada em {new Date(votacao.data_inicio).toLocaleDateString('pt-BR')}
         </div>
       </div>
 
@@ -70,16 +61,14 @@ export function VotacaoCard({
           <div className="flex justify-between items-center mb-2">
             <span className="font-medium">Progresso da Votação</span>
             <span className="text-sm font-medium text-primary">
-              {votacao.votosRegistrados}/{votacao.totalVereadores} votos
+              {0}/12 votos
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
             <div
               className="bg-primary h-3 rounded-full transition-all duration-500 ease-in-out"
               style={{
-                width: `${
-                  (votacao.votosRegistrados / votacao.totalVereadores) * 100
-                }%`,
+                width: `0%`,
               }}
             ></div>
           </div>
@@ -89,7 +78,7 @@ export function VotacaoCard({
           <div className="flex items-center">
             <div className="flex -space-x-2">
               {/* Avatares simulados de vereadores */}
-              {[...Array(Math.min(3, votacao.votosRegistrados))].map((_, i) => (
+              {[...Array(Math.min(3, 0))].map((_, i) => (
                 <div
                   key={i}
                   className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium"
@@ -97,9 +86,9 @@ export function VotacaoCard({
                   V{i + 1}
                 </div>
               ))}
-              {votacao.votosRegistrados > 3 && (
+              {0 > 3 && (
                 <div className="w-8 h-8 rounded-full bg-primary text-white border-2 border-white flex items-center justify-center text-xs font-medium">
-                  +{votacao.votosRegistrados - 3}
+                  +{0 - 3}
                 </div>
               )}
             </div>

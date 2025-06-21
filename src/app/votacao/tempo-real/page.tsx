@@ -7,13 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PainelVotacao } from "@/components/ui/PainelVotacao";
 import { useResultadoVotacao, useRegistrarVoto } from "@/hooks/useVotacao";
-import { VotacaoAtiva } from "@/types/models";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { votacaoService } from "@/services/votacaoService";
 import { VotacaoCard } from "@/components/ui/Card/VotacaoCard";
 import { useAutoFinalizarVotacao } from "@/hooks/useAutoFinalizarVotacao";
 import { useFinalizarVotacao } from "@/hooks/useFinalizarVotacao";
+import { votacaoService, type VotacaoAtiva } from "@/services/votacaoService";
 
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
@@ -42,21 +41,17 @@ function VotacaoRealTimeContent() {
     error: erroVotacao,
     ultimoVoto,
   } = useResultadoVotacao(votacaoAtiva || 0);
-  
+
   // Hook para monitorar e finalizar automaticamente votações com 12 votos
-  const {
-    iniciarMonitoramento,
-    pararMonitoramento,
-    isMonitoring,
-    lastResult,
-  } = useAutoFinalizarVotacao(votacaoAtiva || undefined);
+  const { iniciarMonitoramento, pararMonitoramento, isMonitoring, lastResult } =
+    useAutoFinalizarVotacao(votacaoAtiva || undefined);
 
   const {
     registrarVoto,
     loading: registrandoVoto,
     error: erroRegistro,
   } = useRegistrarVoto();
-  
+
   // Hook para finalizar manualmente a votação
   const {
     finalizarVotacao,
@@ -86,35 +81,31 @@ function VotacaoRealTimeContent() {
     carregarVotacoes();
   }, [addNotification]);
 
-  // Efeito para exibir notificações de novos votos
-  // useEffect(() => {
-  //   if (ultimoVoto) {
-  //     addNotification(
-  //       `${ultimoVoto.vereador} ${ultimoVoto.voto} o projeto.`,
-  //       "info"
-  //     );
-  //   }
-  // }, [ultimoVoto, addNotification]);
-  
   // Efeito para iniciar o monitoramento automático quando uma votação estiver ativa
   useEffect(() => {
     if (votacaoAtiva) {
-      console.log(`🔍 Iniciando monitoramento automático da votação ${votacaoAtiva}`);
+      console.log(
+        `🔍 Iniciando monitoramento automático da votação ${votacaoAtiva}`
+      );
       iniciarMonitoramento();
     } else {
       pararMonitoramento();
     }
-    
+
     return () => {
       pararMonitoramento();
     };
   }, [votacaoAtiva, iniciarMonitoramento, pararMonitoramento]);
-  
+
   // Efeito para notificar quando uma votação for finalizada automaticamente
   useEffect(() => {
     if (lastResult && lastResult.votacoes_finalizadas > 0) {
       addNotification(
-        `Votação finalizada automaticamente com ${lastResult.detalhes[0]?.contagem?.favor || 0} votos a favor e ${lastResult.detalhes[0]?.contagem?.contra || 0} votos contra.`,
+        `Votação finalizada automaticamente com ${
+          lastResult.detalhes[0]?.contagem?.favor || 0
+        } votos a favor e ${
+          lastResult.detalhes[0]?.contagem?.contra || 0
+        } votos contra.`,
         "success"
       );
     }
@@ -137,15 +128,18 @@ function VotacaoRealTimeContent() {
         "error"
       );
     }
-    
+
     if (erroFinalizacao) {
       console.log(`❌ Erro na finalização:`, erroFinalizacao);
-      addNotification(
-        `Erro ao finalizar votação: ${erroFinalizacao}`,
-        "error"
-      );
+      addNotification(`Erro ao finalizar votação: ${erroFinalizacao}`, "error");
     }
-  }, [erroVotacao, erroRegistro, erroFinalizacao, addNotification, votacaoAtiva]);
+  }, [
+    erroVotacao,
+    erroRegistro,
+    erroFinalizacao,
+    addNotification,
+    votacaoAtiva,
+  ]);
 
   // Função para registrar o voto
   const handleVotar = async (
@@ -187,7 +181,7 @@ function VotacaoRealTimeContent() {
       return false;
     }
   };
-  
+
   // Função para finalizar manualmente a votação
   const handleFinalizarVotacao = async (): Promise<void> => {
     if (!votacaoAtiva) {
@@ -195,26 +189,27 @@ function VotacaoRealTimeContent() {
       addNotification("Erro: Nenhuma votação selecionada", "error");
       return;
     }
-    
+
     try {
       console.log(`🏁 Finalizando manualmente a votação ${votacaoAtiva}`);
-      
+
       const resultado = await finalizarVotacao(votacaoAtiva);
-      
+
       if (resultado && resultado.success) {
         console.log("✅ Votação finalizada com sucesso:", resultado);
-        const resultadoMsg = 'resultado' in resultado ? resultado.resultado : 'finalizada';
+        const resultadoMsg =
+          "resultado" in resultado ? resultado.resultado : "finalizada";
         addNotification(
           `Votação finalizada com sucesso! Resultado: ${resultadoMsg}`,
           "success"
         );
       } else {
         console.error("❌ Falha ao finalizar votação");
-        const errorMsg = resultado && 'error' in resultado ? resultado.error : "Erro desconhecido";
-        addNotification(
-          `Falha ao finalizar votação: ${errorMsg}`,
-          "error"
-        );
+        const errorMsg =
+          resultado && "error" in resultado
+            ? resultado.error
+            : "Erro desconhecido";
+        addNotification(`Falha ao finalizar votação: ${errorMsg}`, "error");
       }
     } catch (error) {
       console.error("❌ Erro ao finalizar votação:", error);

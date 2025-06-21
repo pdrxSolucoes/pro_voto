@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabaseClient";
 
 export const setupService = {
   async checkSetup(): Promise<{ hasAdmin: boolean }> {

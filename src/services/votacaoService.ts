@@ -1,8 +1,4 @@
-// src/services/votacaoService.ts
 import { supabase } from "@/lib/supabaseClient";
-import type { VotacaoInterface } from "@/interfaces/VotacaoService";
-import type { VotoInterface } from "@/interfaces/VotoInterface";
-import type { VotacaoAtiva } from "@/types/models";
 
 export interface ResultadoVotacao {
   total_votos: number;
@@ -13,12 +9,30 @@ export interface ResultadoVotacao {
   aprovada: boolean;
 }
 
+export interface VotacaoAtiva {
+  id: number;
+  projeto_id: number;
+  data_inicio: string;
+  data_fim?: string;
+  resultado: string;
+  projetos?: any;
+}
+
+export interface VotoInterface {
+  id: number;
+  votacao_id: number;
+  vereador_id: number;
+  voto: "aprovar" | "desaprovar" | "abster";
+  data_voto: string;
+  usuarios?: { nome: string };
+}
+
 export const votacaoService = {
   async getVotacoesAtivas(): Promise<VotacaoAtiva[]> {
     const { data, error } = await supabase
       .from("votacoes")
       .select("*, projetos(*)")
-      .eq("resultado", "em_andamento");
+      .eq("projetos.status", "em_andamento");
     if (error) throw error;
     return data || [];
   },

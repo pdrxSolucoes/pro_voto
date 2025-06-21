@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface LoginCredentials {
   email: string;
@@ -27,12 +27,10 @@ export interface ValidationResponse {
 
 export const authService = {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Verificar se há usuários no sistema
     const { data: userCount } = await supabase
       .from("usuarios")
       .select("id", { count: "exact" });
 
-    // Se não há usuários e o email é pdrxsolucoes@gmail.com, redirecionar para setup
     if (userCount?.length === 0 && credentials.email === "pdrxsolucoes@gmail.com") {
       throw new Error("SETUP_REQUIRED");
     }
@@ -44,14 +42,11 @@ export const authService = {
 
     if (error) throw error;
 
-    // Buscar dados do usuário
     const { data: userData, error: userError } = await supabase
       .from("usuarios")
       .select("*")
       .eq("email", credentials.email)
       .single();
-
-    console.log("userData", userData);
 
     if (userError) throw userError;
 
@@ -68,9 +63,7 @@ export const authService = {
 
   async validateToken(): Promise<ValidationResponse> {
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) return { valid: false };
 
@@ -101,7 +94,6 @@ export const authService = {
     email: string;
     senha: string;
   }): Promise<AuthResponse> {
-    // Criar usuário no Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: adminData.email,
       password: adminData.senha,
@@ -109,7 +101,6 @@ export const authService = {
 
     if (authError) throw authError;
 
-    // Criar registro na tabela usuarios
     const { data: userData, error: userError } = await supabase
       .from("usuarios")
       .insert({
@@ -117,7 +108,7 @@ export const authService = {
         email: adminData.email,
         cargo: "admin",
         ativo: true,
-        senha: "supabase_auth", // Placeholder, senha real gerenciada pelo Supabase Auth
+        senha: "supabase_auth",
         data_criacao: new Date().toISOString(),
       })
       .select()
