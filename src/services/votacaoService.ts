@@ -1,5 +1,5 @@
 // src/services/votacaoService.ts
-import { supabase } from "./supabase";
+import { supabase } from "@/lib/supabaseClient";
 import type { VotacaoInterface } from "@/interfaces/VotacaoService";
 import type { VotoInterface } from "@/interfaces/VotoInterface";
 import type { VotacaoAtiva } from "@/types/models";

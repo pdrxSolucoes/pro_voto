@@ -39,8 +39,10 @@ export const dashboardService = {
 
             // Buscar total de vereadores
             const { count: totalVereadores } = await supabase
-              .from("vereadores")
-              .select("*", { count: "exact", head: true });
+              .from("usuarios")
+              .select("*", { count: "exact", head: true })
+              .eq("cargo", "vereador")
+              .eq("ativo", true);
 
             return {
               id: p.id,
