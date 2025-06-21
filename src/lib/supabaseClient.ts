@@ -7,7 +7,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 if (typeof window !== "undefined" && (!supabaseUrl || !supabaseAnonKey)) {
   throw new Error("Supabase URL e Anon Key são obrigatórios");
 }
-//vercel
+
 // Use fallback values during build to prevent errors
 const url = supabaseUrl || "https://rrgfncqdsrmhziwhziqy.supabase.co";
 const key =
