@@ -12,9 +12,9 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatarData(isoDate: string | Date): string {
   if (!isoDate) return "";
-  
+
   const data = typeof isoDate === "string" ? new Date(isoDate) : isoDate;
-  
+
   return data.toLocaleString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -45,7 +45,7 @@ export function formatarMoeda(valor: number): string {
 export function truncarTexto(texto: string, tamanhoMaximo: number): string {
   if (!texto) return "";
   if (texto.length <= tamanhoMaximo) return texto;
-  
+
   return texto.substring(0, tamanhoMaximo) + "...";
 }
 
@@ -56,7 +56,7 @@ export function truncarTexto(texto: string, tamanhoMaximo: number): string {
  */
 export function gerarSlug(texto: string): string {
   if (!texto) return "";
-  
+
   return texto
     .toLowerCase()
     .normalize("NFD")
