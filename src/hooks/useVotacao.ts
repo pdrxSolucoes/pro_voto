@@ -56,11 +56,13 @@ export function useResultadoVotacao(votacaoId: number) {
 
       const { data: votacao, error } = await supabase
         .from("votacoes")
-        .select(`
+        .select(
+          `
           *,
           projetos(*),
           votos(*, usuarios(nome))
-        `)
+        `
+        )
         .eq("id", id)
         .single();
 
@@ -69,7 +71,9 @@ export function useResultadoVotacao(votacaoId: number) {
 
       const votos = votacao.votos || [];
       const votosFavor = votos.filter((v: any) => v.voto === "aprovar").length;
-      const votosContra = votos.filter((v: any) => v.voto === "desaprovar").length;
+      const votosContra = votos.filter(
+        (v: any) => v.voto === "desaprovar"
+      ).length;
       const abstencoes = votos.filter((v: any) => v.voto === "abster").length;
 
       const dadosResultado = {
@@ -85,17 +89,20 @@ export function useResultadoVotacao(votacaoId: number) {
           id: v.usuarios.id,
           nome: v.usuarios.nome,
           voto: v.voto,
-          data_voto: v.created_at
+          data_voto: v.created_at,
         })),
         total_vereadores: 12,
-        total_votos: votos.length
+        total_votos: votos.length,
       };
 
-      const dadosUltimoVoto = votos.length > 0 ? {
-        vereador: votos[votos.length - 1].usuarios.nome,
-        voto: votos[votos.length - 1].voto,
-        data: votos[votos.length - 1].created_at
-      } : null;
+      const dadosUltimoVoto =
+        votos.length > 0
+          ? {
+              vereador: votos[votos.length - 1].usuarios.nome,
+              voto: votos[votos.length - 1].voto,
+              data: votos[votos.length - 1].created_at,
+            }
+          : null;
 
       console.log("✅ Dados processados:", {
         resultado: dadosResultado,
@@ -193,13 +200,13 @@ export function useRegistrarVoto() {
 
     try {
       console.log(`🗳️ Registrando voto:`, { votacaoId, vereadorId, voto });
-      
+
       const { data, error } = await supabase
         .from("votos")
         .insert({
           votacao_id: votacaoId,
           usuario_id: vereadorId,
-          voto
+          voto,
         })
         .select()
         .single();
@@ -213,7 +220,7 @@ export function useRegistrarVoto() {
       console.error("❌ Erro ao registrar voto:", err);
 
       if (err instanceof Error) {
-        if (err.message.includes('duplicate')) {
+        if (err.message.includes("duplicate")) {
           setError(new Error("Você já votou nesta votação"));
         } else {
           setError(err);
