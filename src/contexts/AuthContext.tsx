@@ -167,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   };
 
-  // Debug: Verificar estado atual
+  // Debug: Verificar estado atual e logout automático
   useEffect(() => {
     if (!loading) {
       console.log("📊 Estado atual da autenticação:");
@@ -175,6 +175,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("  Loading:", loading);
       console.log("  IsAdmin:", user?.cargo === "admin");
       console.log("  IsAuthenticated:", !!user);
+      
+      if (user === null) {
+        logout();
+      }
     }
   }, [user, loading]);
 
