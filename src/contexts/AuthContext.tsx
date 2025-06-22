@@ -47,12 +47,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } = await supabase.auth.getSession();
         console.log("🔑 Sessão atual:", session);
         if (session?.user) {
+          console.log("🔍 Buscando usuário com email:", session.user.email);
           const { data: userData, error } = await supabase
             .from("usuarios")
             .select("*")
             .eq("email", session.user.email)
             .single();
 
+          console.log("📊 Resultado da busca:", { userData, error });
+          
           if (!error && userData) {
             console.log("✅ Usuário autenticado:", userData.nome);
             setUser({
@@ -62,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               cargo: userData.cargo,
             });
           } else {
-            console.log("❌ Usuário não encontrado na base de dados");
+            console.log("❌ Usuário não encontrado na base de dados", error);
             setUser(null);
           }
         } else {
@@ -167,7 +170,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login");
   };
 
-  // Debug: Verificar estado atual e logout automático
+  // Debug: Verificar estado atual
   useEffect(() => {
     if (!loading) {
       console.log("📊 Estado atual da autenticação:");
@@ -175,10 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("  Loading:", loading);
       console.log("  IsAdmin:", user?.cargo === "admin");
       console.log("  IsAuthenticated:", !!user);
-      
-      if (user === null) {
-        logout();
-      }
     }
   }, [user, loading]);
 
