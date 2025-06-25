@@ -12,7 +12,7 @@ import { votacaoService } from "@/services/votacaoService";
 import { setupService } from "@/services/setupService";
 import Image from "next/image";
 import { VotacaoCard } from "@/components/ui/Card/VotacaoCard";
-import { type VotacaoAtiva } from "@/services/votacaoService";
+import type { VotacaoInterface } from "@/interfaces/VotacaoInterface";
 
 interface HomeContent {
   projetosPendentes: number;
@@ -22,7 +22,7 @@ interface HomeContent {
 
 function HomePageContent() {
   const [data, setData] = useState<HomeContent | null>(null);
-  const [votacoesAtivas, setVotacoesAtivas] = useState<VotacaoAtiva[]>([]);
+  const [votacoesAtivas, setVotacoesAtivas] = useState<VotacaoInterface[]>([]);
   const [loadingHome, setLoadingHome] = useState(true);
   const [loadingVotacoes, setLoadingVotacoes] = useState(true);
 

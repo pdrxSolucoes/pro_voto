@@ -7,10 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/Badge";
 import { useNotifications } from "@/contexts/NotificationContext";
-import { projetoService, type Projeto, type Votacao, type Voto } from "@/services/projetoService";
+import type { ProjetoInterface } from "@/interfaces/ProjetoInterface";
+import { projetoService } from "@/services/projetoService";
+import type { VotoInterface } from "@/interfaces/VotoInterface";
 
 function ProjetoDetalhesContent({ id }: { id: string }) {
-  const [projeto, setProjeto] = useState<Projeto | null>(null);
+  const [projeto, setProjeto] = useState<ProjetoInterface | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -20,7 +22,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
 
   useEffect(() => {
     console.log("🔍 Auth Debug:", { authLoading, user: user?.nome || null });
-    
+
     if (!authLoading) {
       if (!user) {
         console.log("❌ Usuário não autenticado, redirecionando...");
@@ -39,7 +41,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
       console.log("⚠️ Tentativa de carregar projeto sem usuário autenticado");
       return;
     }
-    
+
     try {
       setLoading(true);
       console.log("📄 Carregando projeto ID:", id);
@@ -129,7 +131,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
     return vereadores[id] || `Vereador ${id}`;
   };
 
-  const contarVotos = (votos: Voto[]) => {
+  const contarVotos = (votos: VotoInterface[]) => {
     const contagem = {
       aprovar: 0,
       reprovar: 0,

@@ -12,7 +12,8 @@ import { useNotifications } from "@/contexts/NotificationContext";
 import { VotacaoCard } from "@/components/ui/Card/VotacaoCard";
 import { useAutoFinalizarVotacao } from "@/hooks/useAutoFinalizarVotacao";
 import { useFinalizarVotacao } from "@/hooks/useFinalizarVotacao";
-import { votacaoService, type VotacaoAtiva } from "@/services/votacaoService";
+import type { VotacaoInterface } from "@/interfaces/VotacaoInterface";
+import { votacaoService } from "@/services/votacaoService";
 
 function VotacaoRealTimeContent() {
   const searchParams = useSearchParams();
@@ -25,7 +26,7 @@ function VotacaoRealTimeContent() {
   });
 
   const [votacoesDisponiveis, setVotacoesDisponiveis] = useState<
-    VotacaoAtiva[]
+    VotacaoInterface[]
   >([]);
   const [carregandoLista, setCarregandoLista] = useState(true);
 

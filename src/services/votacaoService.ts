@@ -1,3 +1,4 @@
+import type { VotacaoInterface } from "@/interfaces/VotacaoInterface";
 import { supabase } from "@/lib/supabaseClient";
 
 export interface ResultadoVotacao {
@@ -7,15 +8,6 @@ export interface ResultadoVotacao {
   votos_nao: number;
   abstencoes: number;
   aprovada: boolean;
-}
-
-export interface VotacaoAtiva {
-  id: number;
-  projeto_id: number;
-  data_inicio: string;
-  data_fim?: string;
-  resultado: string;
-  projetos?: any;
 }
 
 export interface VotoInterface {
@@ -28,7 +20,7 @@ export interface VotoInterface {
 }
 
 export const votacaoService = {
-  async getVotacoesAtivas(): Promise<VotacaoAtiva[]> {
+  async getVotacoesAtivas(): Promise<VotacaoInterface[]> {
     const { data, error } = await supabase
       .from("votacoes")
       .select("*, projetos(*)")
@@ -78,11 +70,11 @@ export const votacaoService = {
     };
   },
 
-  async iniciarVotacao(projetoId: number): Promise<any> {
+  async iniciarVotacao(projeto_id: number): Promise<any> {
     const { data, error } = await supabase
       .from("votacoes")
       .insert({
-        projeto_id: projetoId,
+        projeto_id: projeto_id,
         data_inicio: new Date().toISOString(),
       })
       .select()
@@ -131,11 +123,11 @@ export const votacaoService = {
     return data || [];
   },
 
-  async criarVotacao(projetoId: number): Promise<any> {
+  async criarVotacao(projeto_id: number): Promise<any> {
     const { data, error } = await supabase
       .from("votacoes")
       .insert({
-        projeto_id: projetoId,
+        projeto_id: projeto_id,
         data_inicio: new Date().toISOString(),
       })
       .select()

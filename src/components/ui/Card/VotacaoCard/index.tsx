@@ -2,10 +2,10 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
-import { type VotacaoAtiva } from "@/services/votacaoService";
+import type { VotacaoInterface } from "@/interfaces/VotacaoInterface";
 
 interface VotacaoCardProps {
-  votacao: VotacaoAtiva;
+  votacao: VotacaoInterface;
   onSelect?: (id: number) => void;
   isClickable?: boolean;
 }
@@ -33,7 +33,7 @@ export function VotacaoCard({
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-6 py-4 border-b">
         <div className="flex justify-between items-start">
           <h3 className="text-lg font-bold text-gray-800">
-            {votacao.projetos?.titulo || `Projeto #${votacao.projeto_id}`}
+            {`Projeto #${votacao.projeto_id}`}
           </h3>
           {atingiuTotalVotos ? (
             <Badge
@@ -52,7 +52,7 @@ export function VotacaoCard({
           )}
         </div>
         <div className="text-sm text-gray-600 mt-1">
-          Iniciada em {new Date(votacao.data_inicio).toLocaleDateString('pt-BR')}
+          Iniciada em {new Date(votacao.dataInicio).toLocaleDateString("pt-BR")}
         </div>
       </div>
 

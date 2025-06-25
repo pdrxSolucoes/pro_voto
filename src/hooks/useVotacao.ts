@@ -86,7 +86,7 @@ export function useResultadoVotacao(votacaoId: number) {
         votosContra,
         abstencoes,
         vereadores: votos.map((v: any) => ({
-          id: v.usuarios.id,
+          id: v.vereador_id,
           nome: v.usuarios.nome,
           voto: v.voto,
           data_voto: v.created_at,
@@ -205,7 +205,7 @@ export function useRegistrarVoto() {
         .from("votos")
         .insert({
           votacao_id: votacaoId,
-          usuario_id: vereadorId,
+          vereador_id: vereadorId,
           voto,
         })
         .select()
