@@ -1,7 +1,8 @@
 export interface VotoInterface {
   id: number;
-  voto: "aprovar" | "reprovar" | "abster";
-  vereadorId: number;
-  votacaoId: number;
-  dataVoto: string;
+  votacao_id: number;
+  vereador_id: number;
+  voto: "aprovar" | "desaprovar" | "abster";
+  data_voto: string;
+  usuarios?: { nome: string };
 }

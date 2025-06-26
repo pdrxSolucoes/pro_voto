@@ -29,6 +29,8 @@ const nextConfig = {
         'typeorm-aurora-data-api-driver': 'commonjs typeorm-aurora-data-api-driver',
         'react-native-sqlite-storage': 'commonjs react-native-sqlite-storage',
         'sql.js': 'commonjs sql.js',
+        'utf-8-validate': 'commonjs utf-8-validate',
+        'bufferutil': 'commonjs bufferutil',
       });
     }
 

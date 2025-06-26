@@ -20,8 +20,43 @@ export function VotacaoCard({
       onSelect(votacao.id);
     }
   };
-  // Verifica se a votação atingiu 12 votos para mostrar um indicador visual
-  const atingiuTotalVotos = false;
+
+  console.log("teste", votacao);
+  // Calcula os totais baseado nos votos reais
+  const totalVotos = votacao.votos?.length || 0;
+  const totalPossivel = 12; // Total de vereadores
+  const percentualConcluido = (totalVotos / totalPossivel) * 100;
+
+  // Verifica se a votação atingiu 12 votos
+  const atingiuTotalVotos = totalVotos >= totalPossivel;
+
+  // Verifica se a votação foi finalizada
+  const votacaoFinalizada = !!votacao.data_fim;
+
+  // Determina o status da votação
+  const getStatusVotacao = () => {
+    if (votacaoFinalizada) {
+      return {
+        text: "Finalizada",
+        variant: "default",
+        className: "bg-gray-500 hover:bg-gray-600",
+      };
+    }
+    if (atingiuTotalVotos) {
+      return {
+        text: "Aguardando Finalização",
+        variant: "default",
+        className: "bg-orange-500 hover:bg-orange-600",
+      };
+    }
+    return {
+      text: "Em Votação",
+      variant: "default",
+      className: "bg-green-500 hover:bg-green-600",
+    };
+  };
+
+  const status = getStatusVotacao();
 
   return (
     <Card
@@ -35,24 +70,19 @@ export function VotacaoCard({
           <h3 className="text-lg font-bold text-gray-800">
             {`Projeto #${votacao.projeto_id}`}
           </h3>
-          {atingiuTotalVotos ? (
-            <Badge
-              variant="default"
-              className="bg-orange-500 hover:bg-orange-600"
-            >
-              Aguardando Finalização
-            </Badge>
-          ) : (
-            <Badge
-              variant="default"
-              className="bg-green-500 hover:bg-green-600"
-            >
-              Em Votação
-            </Badge>
-          )}
+          <Badge variant={status.variant as any} className={status.className}>
+            {status.text}
+          </Badge>
         </div>
         <div className="text-sm text-gray-600 mt-1">
-          Iniciada em {new Date(votacao.dataInicio).toLocaleDateString("pt-BR")}
+          Iniciada em{" "}
+          {new Date(votacao.data_inicio).toLocaleDateString("pt-BR")}
+          {votacaoFinalizada && (
+            <span className="ml-2">
+              • Finalizada em{" "}
+              {new Date(votacao.data_fim!).toLocaleDateString("pt-BR")}
+            </span>
+          )}
         </div>
       </div>
 
@@ -61,54 +91,96 @@ export function VotacaoCard({
           <div className="flex justify-between items-center mb-2">
             <span className="font-medium">Progresso da Votação</span>
             <span className="text-sm font-medium text-primary">
-              {0}/12 votos
+              {totalVotos}/{totalPossivel} votos
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
             <div
               className="bg-primary h-3 rounded-full transition-all duration-500 ease-in-out"
               style={{
-                width: `0%`,
+                width: `${percentualConcluido}%`,
               }}
             ></div>
           </div>
         </div>
 
+        {/* Exibir contadores de votos se houver votos */}
+        {totalVotos > 0 && (
+          <div className="grid grid-cols-3 gap-2 mb-4 text-center">
+            <div className="bg-green-50 p-2 rounded">
+              <div className="text-green-600 font-bold text-lg">
+                {votacao.votos_favor}
+              </div>
+              <div className="text-green-600 text-xs">Favoráveis</div>
+            </div>
+            <div className="bg-red-50 p-2 rounded">
+              <div className="text-red-600 font-bold text-lg">
+                {votacao.votos_contra}
+              </div>
+              <div className="text-red-600 text-xs">Contrários</div>
+            </div>
+            <div className="bg-yellow-50 p-2 rounded">
+              <div className="text-yellow-600 font-bold text-lg">
+                {votacao.abstencoes}
+              </div>
+              <div className="text-yellow-600 text-xs">Abstenções</div>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center">
             <div className="flex -space-x-2">
-              {/* Avatares simulados de vereadores */}
-              {[...Array(Math.min(3, 0))].map((_, i) => (
+              {/* Avatares dos vereadores que já votaram */}
+              {votacao.votos?.slice(0, 3).map((voto, i) => (
                 <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium"
+                  key={voto.id || i}
+                  className="w-8 h-8 rounded-full bg-primary text-white border-2 border-white flex items-center justify-center text-xs font-medium"
+                  title={`Vereador ${voto.vereador_id}`}
                 >
-                  V{i + 1}
+                  V{voto.vereador_id}
                 </div>
               ))}
-              {0 > 3 && (
+              {totalVotos > 3 && (
                 <div className="w-8 h-8 rounded-full bg-primary text-white border-2 border-white flex items-center justify-center text-xs font-medium">
-                  +{0 - 3}
+                  +{totalVotos - 3}
                 </div>
               )}
             </div>
-            <span className="ml-3 text-sm text-gray-600">já votaram</span>
+            <span className="ml-3 text-sm text-gray-600">
+              {totalVotos > 0 ? "já votaram" : "nenhum voto ainda"}
+            </span>
           </div>
+
           {isClickable ? (
-            <Button variant="primary" className="px-4 py-2">
-              Participar
+            <Button
+              variant="primary"
+              className="px-4 py-2"
+              disabled={votacaoFinalizada}
+            >
+              {votacaoFinalizada ? "Finalizada" : "Participar"}
             </Button>
           ) : (
             <Link href={`/votacao/tempo-real?id=${votacao.id}`}>
               <Button
-                variant={atingiuTotalVotos ? "secondary" : "primary"}
+                variant={
+                  votacaoFinalizada || atingiuTotalVotos
+                    ? "secondary"
+                    : "primary"
+                }
                 className={`px-4 py-2 ${
-                  atingiuTotalVotos
+                  votacaoFinalizada
+                    ? "bg-gray-500 hover:bg-gray-600 text-white"
+                    : atingiuTotalVotos
                     ? "bg-orange-500 hover:bg-orange-600 text-white"
                     : ""
                 }`}
               >
-                {atingiuTotalVotos ? "Ver Resultado" : "Participar"}
+                {votacaoFinalizada
+                  ? "Ver Resultado"
+                  : atingiuTotalVotos
+                  ? "Ver Resultado"
+                  : "Participar"}
               </Button>
             </Link>
           )}

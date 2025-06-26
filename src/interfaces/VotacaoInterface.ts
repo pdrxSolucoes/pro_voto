@@ -1,16 +1,25 @@
-import type { ProjetoInterface } from "./ProjetoInterface";
 import type { VotoInterface } from "./VotoInterface";
 
 export interface VotacaoInterface {
   id: number;
-  dataInicio: string;
-  dataFim?: string;
+  projeto_id: number;
+  data_inicio: string;
+  data_fim: string | null;
+  resultado: "aprovada" | "reprovada" | "em_andamento";
+  votos_favor: number;
+  votos_contra: number;
+  abstencoes: number;
   data_criacao: string;
   data_atualizacao: string;
-  resultado: string;
-  votosFavor: number;
-  votosContra: number;
+  projeto?: any;
+  votos?: VotoInterface[];
+}
+
+export interface ResultadoVotacaoInterface {
+  total_votos: number;
+  total_vereadores: number;
+  votos_sim: number;
+  votos_nao: number;
   abstencoes: number;
-  projeto_id?: string;
-  votos: VotoInterface[];
+  aprovada: boolean;
 }

@@ -80,7 +80,7 @@ function HomePageContent() {
     try {
       setLoadingVotacoes(true);
       const votacoes = await votacaoService.getVotacoesAtivas();
-      setVotacoesAtivas(votacoes || []);
+      setVotacoesAtivas(votacoes);
     } catch (err) {
       console.error("Erro ao carregar votações:", err);
       setVotacoesAtivas([]);
