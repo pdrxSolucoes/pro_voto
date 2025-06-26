@@ -1,6 +1,7 @@
 // src/components/ui/Modal/ModalProjeto.tsx
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
+import type { ProjetoInterface } from "@/interfaces/ProjetoInterface";
 
 interface ProjetoFormModalProps {
   isOpen: boolean;
