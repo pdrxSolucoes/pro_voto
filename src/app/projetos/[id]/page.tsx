@@ -134,7 +134,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
   const contarVotos = (votos: VotoInterface[]) => {
     const contagem = {
       aprovar: 0,
-      reprovar: 0,
+      desaprovar: 0,
       abster: 0,
     };
 
@@ -225,21 +225,21 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                       <div className="flex justify-between items-center mb-3">
                         <h4 className="font-medium">Votação #{votacao.id}</h4>
                         <Badge
-                          variant={!votacao.dataFim ? "default" : "outline"}
+                          variant={!votacao.data_fim ? "default" : "outline"}
                         >
-                          {!votacao.dataFim ? "Em andamento" : "Finalizada"}
+                          {!votacao.data_fim ? "Em andamento" : "Finalizada"}
                         </Badge>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-sm">
                         <div>
                           <span className="text-gray-500">Início:</span>{" "}
-                          {formatarData(votacao.dataInicio)}
+                          {formatarData(votacao.data_inicio)}
                         </div>
-                        {votacao.dataFim && (
+                        {votacao.data_fim && (
                           <div>
                             <span className="text-gray-500">Término:</span>{" "}
-                            {formatarData(votacao.dataFim)}
+                            {formatarData(votacao.data_fim)}
                           </div>
                         )}
                       </div>
@@ -253,7 +253,7 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                               <div className="grid grid-cols-3 gap-2 text-center">
                                 <div className="bg-green-50 p-2 rounded">
                                   <div className="text-xl font-bold text-green-700">
-                                    {votacao.votosFavor || contagem.aprovar}
+                                    {votacao.votos_favor || contagem.aprovar}
                                   </div>
                                   <div className="text-xs text-green-600">
                                     Aprovações
@@ -261,7 +261,8 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                                 </div>
                                 <div className="bg-red-50 p-2 rounded">
                                   <div className="text-xl font-bold text-red-700">
-                                    {votacao.votosContra || contagem.reprovar}
+                                    {votacao.votos_contra ||
+                                      contagem.desaprovar}
                                   </div>
                                   <div className="text-xs text-red-600">
                                     Reprovações
@@ -297,20 +298,20 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                                   {votacao.votos.map((voto) => {
                                     // Buscar o nome do vereador pelo ID
                                     const vereadorNome = obterNomeVereador(
-                                      voto.vereadorId
+                                      voto.vereador_id
                                     );
                                     return (
                                       <tr key={voto.id}>
                                         <td className="py-2 px-3">
                                           {vereadorNome ||
-                                            `Vereador ID: ${voto.vereadorId}`}
+                                            `Vereador ID: ${voto.vereador_id}`}
                                         </td>
                                         <td className="py-2 px-3">
                                           <span
                                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
                                               voto.voto === "aprovar"
                                                 ? "bg-green-100 text-green-800"
-                                                : voto.voto === "reprovar"
+                                                : voto.voto === "desaprovar"
                                                 ? "bg-red-100 text-red-800"
                                                 : "bg-yellow-100 text-yellow-800"
                                             }`}
@@ -319,14 +320,14 @@ function ProjetoDetalhesContent({ id }: { id: string }) {
                                               className={`w-2 h-2 rounded-full mr-1 ${
                                                 voto.voto === "aprovar"
                                                   ? "bg-green-500"
-                                                  : voto.voto === "reprovar"
+                                                  : voto.voto === "desaprovar"
                                                   ? "bg-red-500"
                                                   : "bg-yellow-500"
                                               }`}
                                             ></span>
                                             {voto.voto === "aprovar"
                                               ? "Aprovado"
-                                              : voto.voto === "reprovar"
+                                              : voto.voto === "desaprovar"
                                               ? "Reprovado"
                                               : "Abstenção"}
                                           </span>
