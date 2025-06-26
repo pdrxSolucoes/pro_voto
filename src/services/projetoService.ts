@@ -27,11 +27,13 @@ export const projetoService = {
 
     if (projetoError) throw projetoError;
 
+    // CORREÇÃO: Adicionar projeto_id na seleção
     const { data: votacoes, error: votacoesError } = await supabase
       .from("votacoes")
       .select(
         `
         id,
+        projeto_id,
         data_inicio,
         data_fim,
         data_criacao,
@@ -56,20 +58,21 @@ export const projetoService = {
     const votacoesMapeadas: VotacaoInterface[] = (votacoes || []).map(
       (votacao) => ({
         id: votacao.id,
-        dataInicio: votacao.data_inicio,
-        dataFim: votacao.data_fim,
+        projeto_id: votacao.projeto_id, // Agora funcionará
+        data_inicio: votacao.data_inicio,
+        data_fim: votacao.data_fim,
         data_criacao: votacao.data_criacao || votacao.data_inicio,
         data_atualizacao: votacao.data_atualizacao || votacao.data_inicio,
         resultado: votacao.resultado,
-        votosFavor: votacao.votos_favor || 0,
-        votosContra: votacao.votos_contra || 0,
+        votos_favor: votacao.votos_favor || 0,
+        votos_contra: votacao.votos_contra || 0,
         abstencoes: votacao.abstencoes || 0,
         votos: (votacao.votos || []).map((voto: any) => ({
           id: voto.id,
           voto: voto.voto,
-          vereadorId: voto.vereador_id,
-          votacaoId: voto.votacao_id,
-          dataVoto: voto.data_voto || voto.created_at,
+          vereador_id: voto.vereador_id,
+          votacao_id: voto.votacao_id,
+          data_voto: voto.data_voto || voto.created_at,
         })),
       })
     );
@@ -85,6 +88,7 @@ export const projetoService = {
       .insert({
         ...projeto,
         data_apresentacao: new Date().toISOString(),
+        status: "pendente" as const,
       })
       .select()
       .single();
