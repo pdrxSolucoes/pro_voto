@@ -147,6 +147,7 @@ export function VotacaoCard({
                 </div>
               )}
             </div>
+
             <span className="ml-3 text-sm text-gray-600">
               {totalVotos > 0 ? "já votaram" : "nenhum voto ainda"}
             </span>
